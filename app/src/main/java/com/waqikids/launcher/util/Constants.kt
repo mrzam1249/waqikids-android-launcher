@@ -1,8 +1,8 @@
 package com.waqikids.launcher.util
 
 object Constants {
-    // API Configuration
-    const val API_BASE_URL = "https://waqikids.com/api/"
+    // API Configuration - Direct connection to backend server
+    const val API_BASE_URL = "http://178.156.160.245:8080/api/"
     const val DNS_BASE_DOMAIN = "dns.waqikids.com"
     
     // Timeouts

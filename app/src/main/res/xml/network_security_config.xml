@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow cleartext HTTP for our backend server -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">178.156.160.245</domain>
+    </domain-config>
+    
+    <!-- Default: require HTTPS for everything else -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
