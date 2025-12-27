@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Brand Colors -->
+    <color name="primary">#6366F1</color>
+    <color name="primary_variant">#4F46E5</color>
+    <color name="primary_light">#A5B4FC</color>
+    
+    <!-- Secondary Colors -->
+    <color name="secondary">#F472B6</color>
+    <color name="secondary_variant">#EC4899</color>
+    
+    <!-- Background Colors -->
+    <color name="background_start">#E0E7FF</color>
+    <color name="background_end">#FCE7F3</color>
+    
+    <!-- Surface Colors -->
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F3F4F6</color>
+    
+    <!-- Text Colors -->
+    <color name="on_primary">#FFFFFF</color>
+    <color name="on_secondary">#FFFFFF</color>
+    <color name="on_background">#1F2937</color>
+    <color name="on_surface">#1F2937</color>
+    <color name="text_secondary">#6B7280</color>
+    
+    <!-- Status Colors -->
+    <color name="success">#10B981</color>
+    <color name="warning">#F59E0B</color>
+    <color name="error">#EF4444</color>
+    
+    <!-- Kid-Friendly Accent Colors -->
+    <color name="kid_blue">#60A5FA</color>
+    <color name="kid_green">#34D399</color>
+    <color name="kid_yellow">#FBBF24</color>
+    <color name="kid_purple">#A78BFA</color>
+    <color name="kid_pink">#F472B6</color>
+    <color name="kid_orange">#FB923C</color>
+</resources>

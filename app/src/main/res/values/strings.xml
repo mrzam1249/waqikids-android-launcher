@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WaqiKids</string>
+    
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">Welcome to WaqiKids</string>
+    <string name="onboarding_welcome_subtitle">Keep your child safe online</string>
+    <string name="onboarding_safety_title">Smart Protection</string>
+    <string name="onboarding_safety_subtitle">AI-powered content filtering keeps harmful content away</string>
+    <string name="onboarding_control_title">Full Control</string>
+    <string name="onboarding_control_subtitle">Manage apps, time limits, and more from your phone</string>
+    <string name="onboarding_setup_title">Easy Setup</string>
+    <string name="onboarding_setup_subtitle">Just 4 quick steps to protect your child</string>
+    <string name="next">Next</string>
+    <string name="get_started">Get Started</string>
+    <string name="skip">Skip</string>
+    
+    <!-- Pairing -->
+    <string name="pairing_title">Link This Device</string>
+    <string name="pairing_subtitle">Enter the 6-digit code from your WaqiKids parent app</string>
+    <string name="pairing_button">Link Device</string>
+    <string name="pairing_error">Invalid code. Please try again.</string>
+    <string name="pairing_success">Device linked successfully!</string>
+    
+    <!-- Setup Wizard -->
+    <string name="setup_title">Let\'s Set Up Protection</string>
+    <string name="setup_launcher_title">Set Default Launcher</string>
+    <string name="setup_launcher_subtitle">Make WaqiKids your home screen</string>
+    <string name="setup_accessibility_title">Enable Protection</string>
+    <string name="setup_accessibility_subtitle">Prevents access to settings and app stores</string>
+    <string name="setup_dns_title">Web Filtering</string>
+    <string name="setup_dns_subtitle">Filters inappropriate websites automatically</string>
+    <string name="setup_mode_title">Protection Mode</string>
+    <string name="setup_mode_subtitle">Choose your protection level</string>
+    <string name="setup_complete">Setup Complete!</string>
+    
+    <!-- Modes -->
+    <string name="mode_easy">Easy Mode</string>
+    <string name="mode_easy_desc">Strong protection that can be reset if needed</string>
+    <string name="mode_fortknox">Fort Knox Mode</string>
+    <string name="mode_fortknox_desc">Maximum protection - cannot be bypassed</string>
+    
+    <!-- Launcher -->
+    <string name="greeting_morning">Good morning</string>
+    <string name="greeting_afternoon">Good afternoon</string>
+    <string name="greeting_evening">Good evening</string>
+    <string name="time_remaining">Time remaining today</string>
+    <string name="no_apps">No apps available</string>
+    
+    <!-- Accessibility Service -->
+    <string name="accessibility_service_description">WaqiKids uses this service to protect your child by preventing access to device settings and unauthorized apps.</string>
+    
+    <!-- Notifications -->
+    <string name="notification_channel_name">WaqiKids Protection</string>
+    <string name="notification_channel_description">Keeps your child protected</string>
+    <string name="notification_title">WaqiKids Active</string>
+    <string name="notification_text">Your child is protected</string>
+</resources>
