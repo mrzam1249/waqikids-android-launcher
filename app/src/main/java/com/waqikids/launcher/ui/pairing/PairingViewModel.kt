@@ -1,36 +1,60 @@
 package com.waqikids.launcher.ui.pairing
 
 import android.os.Build
+import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.waqikids.launcher.BuildConfig
 import com.waqikids.launcher.data.api.WaqiApi
-import com.waqikids.launcher.data.api.dto.DeviceInfo
 import com.waqikids.launcher.data.api.dto.PairRequest
 import com.waqikids.launcher.data.local.PreferencesManager
 import com.waqikids.launcher.domain.model.DeviceConfig
 import com.waqikids.launcher.domain.model.ProtectionMode
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
 class PairingViewModel @Inject constructor(
     private val api: WaqiApi,
-    private val preferencesManager: PreferencesManager
+    private val preferencesManager: PreferencesManager,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
+    
+    private fun getOrCreateDeviceId(): String {
+        // Try to get Android ID first
+        val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        return if (!androidId.isNullOrEmpty() && androidId != "9774d56d682e549c") {
+            "android-$androidId"
+        } else {
+            // Fallback to random UUID
+            "android-${UUID.randomUUID()}"
+        }
+    }
+    
+    private fun getDeviceName(): String {
+        val manufacturer = Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
+        val model = Build.MODEL
+        return if (model.startsWith(manufacturer, ignoreCase = true)) {
+            model
+        } else {
+            "$manufacturer $model"
+        }
+    }
     
     fun pairDevice(code: String, onResult: (success: Boolean, error: String?) -> Unit) {
         viewModelScope.launch {
             try {
+                val deviceId = getOrCreateDeviceId()
+                val deviceName = getDeviceName()
+                
                 val request = PairRequest(
-                    pairingCode = code,
-                    deviceInfo = DeviceInfo(
-                        manufacturer = Build.MANUFACTURER,
-                        model = Build.MODEL,
-                        osVersion = Build.VERSION.RELEASE,
-                        appVersion = BuildConfig.VERSION_NAME
-                    )
+                    childDeviceId = deviceId,
+                    childDeviceName = deviceName,
+                    platform = "android",
+                    pairingCode = code.trim()
                 )
                 
                 val response = api.pairDevice(request)
@@ -40,14 +64,12 @@ class PairingViewModel @Inject constructor(
                     
                     // Save config locally
                     val config = DeviceConfig(
-                        deviceId = body.deviceId ?: "",
-                        childName = body.childName ?: "Child",
+                        deviceId = deviceId,
+                        childName = deviceName,
                         parentId = body.parentId ?: "",
-                        dnsSubdomain = body.dnsSubdomain ?: "",
-                        protectionMode = ProtectionMode.valueOf(
-                            body.protectionMode ?: "EASY"
-                        ),
-                        allowedPackages = body.allowedPackages ?: emptyList(),
+                        dnsSubdomain = deviceId,  // Used for DNS profile
+                        protectionMode = ProtectionMode.EASY,
+                        allowedPackages = emptyList(),  // Will be fetched via heartbeat
                         isPaired = true,
                         isSetupComplete = false
                     )
@@ -55,25 +77,13 @@ class PairingViewModel @Inject constructor(
                     preferencesManager.saveDeviceConfig(config)
                     onResult(true, null)
                 } else {
-                    onResult(false, response.body()?.error ?: "Pairing failed")
+                    val errorMsg = response.body()?.error 
+                        ?: response.errorBody()?.string()
+                        ?: "Pairing failed. Please check the code and try again."
+                    onResult(false, errorMsg)
                 }
             } catch (e: Exception) {
-                // For demo/testing: simulate successful pairing
-                val mockConfig = DeviceConfig(
-                    deviceId = "demo-device-${System.currentTimeMillis()}",
-                    childName = "Demo Child",
-                    parentId = "demo-parent",
-                    dnsSubdomain = "demo",
-                    protectionMode = ProtectionMode.EASY,
-                    allowedPackages = listOf(
-                        "com.android.chrome",
-                        "com.google.android.youtube"
-                    ),
-                    isPaired = true,
-                    isSetupComplete = false
-                )
-                preferencesManager.saveDeviceConfig(mockConfig)
-                onResult(true, null)
+                onResult(false, "Connection error: ${e.message}")
             }
         }
     }

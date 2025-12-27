@@ -4,67 +4,95 @@ import com.google.gson.annotations.SerializedName
 
 /**
  * Request to pair device with parent account
+ * Matches backend: POST /api/devices/pair
  */
 data class PairRequest(
+    @SerializedName("child_device_id")
+    val childDeviceId: String,
+    
+    @SerializedName("child_device_name")
+    val childDeviceName: String,
+    
+    @SerializedName("platform")
+    val platform: String = "android",
+    
     @SerializedName("pairing_code")
-    val pairingCode: String,
-    
-    @SerializedName("device_info")
-    val deviceInfo: DeviceInfo
-)
-
-data class DeviceInfo(
-    @SerializedName("manufacturer")
-    val manufacturer: String,
-    
-    @SerializedName("model")
-    val model: String,
-    
-    @SerializedName("os_version")
-    val osVersion: String,
-    
-    @SerializedName("app_version")
-    val appVersion: String
+    val pairingCode: String
 )
 
 /**
  * Response after successful pairing
+ * Matches backend response from /api/devices/pair
  */
 data class PairResponse(
     @SerializedName("success")
     val success: Boolean,
     
-    @SerializedName("device_id")
-    val deviceId: String?,
-    
-    @SerializedName("child_name")
-    val childName: String?,
-    
     @SerializedName("parent_id")
     val parentId: String?,
     
-    @SerializedName("dns_subdomain")
-    val dnsSubdomain: String?,
+    @SerializedName("child_device_id")
+    val childDeviceId: String?,
     
-    @SerializedName("allowed_packages")
-    val allowedPackages: List<String>?,
-    
-    @SerializedName("protection_mode")
-    val protectionMode: String?,
+    @SerializedName("subscription_status")
+    val subscriptionStatus: String?,
     
     @SerializedName("error")
     val error: String?
 )
 
 /**
+ * Response from pairing status check
+ * Matches backend: GET /api/device/pairing-status/:device_id
+ */
+data class PairingStatusResponse(
+    @SerializedName("paired")
+    val paired: Boolean,
+    
+    @SerializedName("parent_id")
+    val parentId: String?,
+    
+    @SerializedName("parent_email")
+    val parentEmail: String?,
+    
+    @SerializedName("parent_name")
+    val parentName: String?,
+    
+    @SerializedName("child_nickname")
+    val childNickname: String?,
+    
+    @SerializedName("safety_mode")
+    val safetyMode: String?,
+    
+    @SerializedName("subscription_status")
+    val subscriptionStatus: String?,
+    
+    @SerializedName("subscription_active")
+    val subscriptionActive: Boolean?,
+    
+    @SerializedName("days_remaining")
+    val daysRemaining: Int?,
+    
+    @SerializedName("message")
+    val message: String?,
+    
+    @SerializedName("forced_lock")
+    val forcedLock: Boolean?,
+    
+    @SerializedName("lock_reason")
+    val lockReason: String?
+)
+
+/**
  * Request to sync installed apps
+ * Matches backend: POST /api/device/installed-apps
  */
 data class SyncAppsRequest(
     @SerializedName("device_id")
     val deviceId: String,
     
     @SerializedName("apps")
-    val apps: List<AppInfoDto>
+    val apps: List<String>  // Just package names for now
 )
 
 data class AppInfoDto(
@@ -86,42 +114,53 @@ data class AppInfoDto(
  */
 data class SyncAppsResponse(
     @SerializedName("success")
-    val success: Boolean,
-    
-    @SerializedName("allowed_packages")
-    val allowedPackages: List<String>?
+    val success: Boolean
 )
 
 /**
  * Heartbeat request to keep connection alive
+ * Matches backend: POST /api/device/heartbeat
  */
 data class HeartbeatRequest(
     @SerializedName("device_id")
     val deviceId: String,
     
-    @SerializedName("battery_level")
-    val batteryLevel: Int?,
+    @SerializedName("parent_id")
+    val parentId: String? = null,
     
-    @SerializedName("screen_time_today")
-    val screenTimeToday: Int?  // minutes
+    @SerializedName("device_name")
+    val deviceName: String? = null,
+    
+    @SerializedName("device_type")
+    val deviceType: String? = null,
+    
+    @SerializedName("platform")
+    val platform: String = "android"
 )
 
 /**
- * Heartbeat response with any updates
+ * Heartbeat response with pairing status
+ * Matches backend response from /api/device/heartbeat
  */
 data class HeartbeatResponse(
     @SerializedName("success")
     val success: Boolean,
     
-    @SerializedName("allowed_packages")
-    val allowedPackages: List<String>?,
+    @SerializedName("paired")
+    val paired: Boolean?
+)
+
+/**
+ * Request to register FCM token for push notifications
+ * Matches backend: POST /api/device/fcm-token
+ */
+data class FcmTokenRequest(
+    @SerializedName("device_id")
+    val deviceId: String,
     
-    @SerializedName("is_locked")
-    val isLocked: Boolean?,
+    @SerializedName("fcm_token")
+    val fcmToken: String,
     
-    @SerializedName("daily_limit_minutes")
-    val dailyLimitMinutes: Int?,
-    
-    @SerializedName("message")
-    val message: String?  // Message from parent
+    @SerializedName("platform")
+    val platform: String = "android"
 )
