@@ -12,7 +12,7 @@ class BootReceiver : BroadcastReceiver() {
     
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
-            intent.action == Intent.ACTION_QUICKBOOT_POWERON ||
+            intent.action == "android.intent.action.QUICKBOOT_POWERON" ||
             intent.action == "android.intent.action.REBOOT") {
             
             // Start the launcher
