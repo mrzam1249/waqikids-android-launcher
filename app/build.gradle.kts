@@ -90,4 +90,7 @@ dependencies {
 
     // System UI Controller
     implementation(libs.accompanist.systemuicontroller)
+    
+    // BCrypt for PIN verification
+    implementation("org.mindrot:jbcrypt:0.4")
 }

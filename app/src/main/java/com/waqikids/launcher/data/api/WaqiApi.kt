@@ -6,6 +6,9 @@ import com.waqikids.launcher.data.api.dto.HeartbeatResponse
 import com.waqikids.launcher.data.api.dto.PairRequest
 import com.waqikids.launcher.data.api.dto.PairResponse
 import com.waqikids.launcher.data.api.dto.PairingStatusResponse
+import com.waqikids.launcher.data.api.dto.ParentPinResponse
+import com.waqikids.launcher.data.api.dto.PinVerifyRequest
+import com.waqikids.launcher.data.api.dto.PinVerifyResponse
 import com.waqikids.launcher.data.api.dto.SyncAppsRequest
 import com.waqikids.launcher.data.api.dto.SyncAppsResponse
 import retrofit2.Response
@@ -50,4 +53,18 @@ interface WaqiApi {
      */
     @POST("device/fcm-token")
     suspend fun registerFcmToken(@Body request: FcmTokenRequest): Response<Unit>
+    
+    /**
+     * Verify parent PIN for device unlock
+     * Backend: POST /api/pin/verify
+     */
+    @POST("pin/verify")
+    suspend fun verifyParentPin(@Body request: PinVerifyRequest): Response<PinVerifyResponse>
+    
+    /**
+     * Get parent PIN hash for local caching
+     * Backend: GET /api/device/{device_id}/parent-pin
+     */
+    @GET("device/{deviceId}/parent-pin")
+    suspend fun getParentPinHash(@Path("deviceId") deviceId: String): Response<ParentPinResponse>
 }
