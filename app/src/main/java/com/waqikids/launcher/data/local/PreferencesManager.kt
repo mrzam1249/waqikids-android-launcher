@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -12,6 +13,7 @@ import com.waqikids.launcher.domain.model.DeviceConfig
 import com.waqikids.launcher.domain.model.ProtectionMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,6 +38,8 @@ class PreferencesManager @Inject constructor(
         val IS_LAUNCHER_SET = booleanPreferencesKey("is_launcher_set")
         val IS_ACCESSIBILITY_ENABLED = booleanPreferencesKey("is_accessibility_enabled")
         val IS_DNS_CONFIGURED = booleanPreferencesKey("is_dns_configured")
+        val CACHED_PIN_HASH = stringPreferencesKey("cached_pin_hash")
+        val PARENT_MODE_EXPIRY = longPreferencesKey("parent_mode_expiry")
     }
     
     // Flow to observe setup completion status
@@ -121,5 +125,46 @@ class PreferencesManager @Inject constructor(
     
     suspend fun clearAll() {
         context.dataStore.edit { it.clear() }
+    }
+    
+    // ===== PIN Caching for Parent Mode =====
+    
+    suspend fun getDeviceId(): String? {
+        return deviceConfig.first()?.deviceId
+    }
+    
+    suspend fun getCachedPinHash(): String? {
+        return context.dataStore.data.map { prefs ->
+            prefs[Keys.CACHED_PIN_HASH]
+        }.first()
+    }
+    
+    suspend fun setCachedPinHash(hash: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.CACHED_PIN_HASH] = hash
+        }
+    }
+    
+    suspend fun setParentModeExpiry(expiryTimeMillis: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.PARENT_MODE_EXPIRY] = expiryTimeMillis
+        }
+    }
+    
+    suspend fun getParentModeExpiry(): Long {
+        return context.dataStore.data.map { prefs ->
+            prefs[Keys.PARENT_MODE_EXPIRY] ?: 0L
+        }.first()
+    }
+    
+    suspend fun isParentModeActive(): Boolean {
+        val expiry = getParentModeExpiry()
+        return expiry > System.currentTimeMillis()
+    }
+    
+    suspend fun clearParentMode() {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.PARENT_MODE_EXPIRY] = 0L
+        }
     }
 }

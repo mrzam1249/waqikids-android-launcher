@@ -6,9 +6,11 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -68,9 +70,11 @@ import com.waqikids.launcher.ui.theme.KidPurple
 import com.waqikids.launcher.ui.theme.Primary
 import java.util.Calendar
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LauncherScreen(
-    viewModel: LauncherViewModel = hiltViewModel()
+    viewModel: LauncherViewModel = hiltViewModel(),
+    onNavigateToParentMode: () -> Unit = {}
 ) {
     val apps by viewModel.allowedApps.collectAsState(initial = emptyList())
     val childName by viewModel.childName.collectAsState(initial = "Child")
@@ -162,8 +166,8 @@ fun LauncherScreen(
                 }
             }
             
-            // Decorative bottom elements
-            DecorativeFooter()
+            // Decorative bottom elements (long-press for parent mode)
+            DecorativeFooter(onLongPress = onNavigateToParentMode)
             
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -331,10 +335,20 @@ private fun AppIconItem(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun DecorativeFooter() {
+private fun DecorativeFooter(
+    onLongPress: () -> Unit = {}
+) {
     Box(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = { /* no-op */ },
+                onLongClick = onLongPress,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(

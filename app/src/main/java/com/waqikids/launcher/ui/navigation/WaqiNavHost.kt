@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import com.waqikids.launcher.ui.launcher.LauncherScreen
 import com.waqikids.launcher.ui.onboarding.OnboardingScreen
 import com.waqikids.launcher.ui.pairing.PairingScreen
+import com.waqikids.launcher.ui.parentmode.ParentModeScreen
 import com.waqikids.launcher.ui.setup.SetupWizardScreen
 import com.waqikids.launcher.ui.splash.SplashScreen
 
@@ -63,7 +64,23 @@ fun WaqiNavHost(
         }
         
         composable(Screen.Launcher.route) {
-            LauncherScreen()
+            LauncherScreen(
+                onNavigateToParentMode = {
+                    navController.navigate(Screen.ParentMode.route)
+                }
+            )
+        }
+        
+        composable(Screen.ParentMode.route) {
+            ParentModeScreen(
+                onDismiss = {
+                    navController.popBackStack()
+                },
+                onUnlocked = {
+                    // Stay on parent mode screen but show unlocked content
+                    // The screen handles this internally
+                }
+            )
         }
     }
 }

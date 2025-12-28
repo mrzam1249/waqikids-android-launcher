@@ -164,3 +164,65 @@ data class FcmTokenRequest(
     @SerializedName("platform")
     val platform: String = "android"
 )
+
+/**
+ * Request to verify parent PIN for device unlock
+ * Matches backend: POST /api/pin/verify
+ */
+data class PinVerifyRequest(
+    @SerializedName("child_device_id")
+    val childDeviceId: String,
+    
+    @SerializedName("pin")
+    val pin: String
+)
+
+/**
+ * Response from PIN verification
+ */
+data class PinVerifyResponse(
+    @SerializedName("success")
+    val success: Boolean,
+    
+    @SerializedName("valid")
+    val valid: Boolean?,
+    
+    @SerializedName("parent_id")
+    val parentId: String?,
+    
+    @SerializedName("parent_mode_expires")
+    val parentModeExpires: String?,
+    
+    @SerializedName("pin_hash")
+    val pinHash: String?,  // For local caching
+    
+    @SerializedName("error")
+    val error: String?,
+    
+    @SerializedName("attempts_remaining")
+    val attemptsRemaining: Int?,
+    
+    @SerializedName("retry_after_minutes")
+    val retryAfterMinutes: Int?
+)
+
+/**
+ * Response from fetching parent PIN hash
+ * Matches backend: GET /api/device/{device_id}/parent-pin
+ */
+data class ParentPinResponse(
+    @SerializedName("success")
+    val success: Boolean,
+    
+    @SerializedName("parent_id")
+    val parentId: String?,
+    
+    @SerializedName("pin_hash")
+    val pinHash: String?,
+    
+    @SerializedName("has_pin")
+    val hasPin: Boolean?,
+    
+    @SerializedName("error")
+    val error: String?
+)

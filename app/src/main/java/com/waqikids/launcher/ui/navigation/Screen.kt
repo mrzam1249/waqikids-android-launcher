@@ -10,4 +10,5 @@ sealed class Screen(val route: String) {
     data object Setup : Screen("setup")
     data object Launcher : Screen("launcher")
     data object Locked : Screen("locked")
+    data object ParentMode : Screen("parent_mode")
 }
