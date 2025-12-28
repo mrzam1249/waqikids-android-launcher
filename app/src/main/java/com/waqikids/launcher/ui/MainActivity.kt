@@ -31,11 +31,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             WaqiKidsTheme {
                 val isSetupComplete by preferencesManager.isSetupComplete.collectAsState(initial = false)
+                val isPaired by preferencesManager.isPaired.collectAsState(initial = false)
                 
-                val startDestination = if (isSetupComplete) {
-                    Screen.Launcher.route
-                } else {
-                    Screen.Splash.route
+                val startDestination = when {
+                    isSetupComplete -> Screen.Launcher.route
+                    isPaired -> Screen.Setup.route  // Already paired, go directly to setup
+                    else -> Screen.Splash.route
                 }
                 
                 Surface(

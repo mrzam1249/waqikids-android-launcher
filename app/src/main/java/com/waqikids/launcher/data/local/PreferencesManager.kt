@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.core.intPreferencesKey
 import com.waqikids.launcher.domain.model.DeviceConfig
 import com.waqikids.launcher.domain.model.ProtectionMode
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -36,6 +37,7 @@ class PreferencesManager @Inject constructor(
         val IS_LAUNCHER_SET = booleanPreferencesKey("is_launcher_set")
         val IS_ACCESSIBILITY_ENABLED = booleanPreferencesKey("is_accessibility_enabled")
         val IS_DNS_CONFIGURED = booleanPreferencesKey("is_dns_configured")
+        val CURRENT_SETUP_STEP = intPreferencesKey("current_setup_step")
     }
     
     // Flow to observe setup completion status
@@ -69,6 +71,10 @@ class PreferencesManager @Inject constructor(
     
     val allowedPackages: Flow<Set<String>> = context.dataStore.data.map { prefs ->
         prefs[Keys.ALLOWED_PACKAGES] ?: emptySet()
+    }
+    
+    val currentSetupStep: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[Keys.CURRENT_SETUP_STEP] ?: 0
     }
     
     suspend fun setOnboardingComplete(complete: Boolean) {
@@ -116,6 +122,12 @@ class PreferencesManager @Inject constructor(
     suspend fun setSetupComplete(complete: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[Keys.IS_SETUP_COMPLETE] = complete
+        }
+    }
+    
+    suspend fun setCurrentSetupStep(step: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.CURRENT_SETUP_STEP] = step
         }
     }
     

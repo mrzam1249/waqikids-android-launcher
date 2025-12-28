@@ -38,10 +38,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,7 +71,7 @@ fun SetupWizardScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    var currentStep by remember { mutableIntStateOf(0) }
+    val currentStep by viewModel.currentSetupStep.collectAsState(initial = 0)
     val deviceConfig by viewModel.deviceConfig.collectAsState(initial = null)
     
     val dnsHostname = remember(deviceConfig) {
@@ -263,7 +261,7 @@ fun SetupWizardScreen(
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 OutlinedButton(
-                    onClick = { currentStep++ },
+                    onClick = { viewModel.setCurrentStep(currentStep + 1) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
