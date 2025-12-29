@@ -314,7 +314,7 @@ fun DidYouKnowCard(
 }
 
 /**
- * Parent Mode Access Button - Subtle but accessible
+ * Parent Mode Access Button - Visible and accessible for parents
  */
 @Composable
 fun ParentModeButton(
@@ -332,29 +332,48 @@ fun ParentModeButton(
         label = "rotation"
     )
     
-    Box(
+    // Pulse animation to draw attention
+    val pulse by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+    
+    Card(
         modifier = modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFF6366F1).copy(alpha = 0.2f),
-                        Color(0xFF8B5CF6).copy(alpha = 0.2f)
-                    )
-                )
-            )
+            .scale(pulse)
             .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF6366F1)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        Icon(
-            imageVector = Icons.Default.Settings,
-            contentDescription = "Parent Mode",
-            tint = Color(0xFF6366F1),
-            modifier = Modifier
-                .size(24.dp)
-                .rotate(rotation)
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Parent Mode",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(20.dp)
+                    .rotate(rotation)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Parent",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            )
+        }
     }
 }
 
