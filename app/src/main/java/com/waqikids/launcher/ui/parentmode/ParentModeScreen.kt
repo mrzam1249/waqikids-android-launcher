@@ -319,7 +319,7 @@ private fun PinEntryContent(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Enter your 6-digit PIN to unlock",
+                text = "Enter your 4-digit PIN to unlock",
                 fontSize = 16.sp,
                 color = Color.White.copy(alpha = 0.7f)
             )
@@ -368,7 +368,7 @@ private fun PinEntryContent(
             // Number pad
             NumberPad(
                 onNumberClick = { digit ->
-                    if (uiState.enteredPin.length < 6) {
+                    if (uiState.enteredPin.length < 4) {
                         onNumberClick(digit)
                     }
                 },
@@ -387,10 +387,10 @@ private fun PinEntryRow(
     hasError: Boolean
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.padding(horizontal = 24.dp)
     ) {
-        repeat(6) { index ->
+        repeat(4) { index ->
             PinDot(
                 isFilled = index < pin.length,
                 hasError = hasError

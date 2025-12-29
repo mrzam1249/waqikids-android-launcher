@@ -41,12 +41,12 @@ class ParentModeViewModel @Inject constructor(
     
     fun appendDigit(digit: String) {
         val currentPin = _uiState.value.enteredPin
-        if (currentPin.length < 6) {
+        if (currentPin.length < 4) {
             val newPin = currentPin + digit
             _uiState.update { it.copy(enteredPin = newPin, error = null) }
             
-            // Auto-verify when 6 digits entered
-            if (newPin.length == 6) {
+            // Auto-verify when 4 digits entered
+            if (newPin.length == 4) {
                 verifyPin(newPin)
             }
         }
