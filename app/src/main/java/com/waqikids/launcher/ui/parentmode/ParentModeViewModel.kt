@@ -159,7 +159,9 @@ class ParentModeViewModel @Inject constructor(
     private fun onUnlockSuccess() {
         // Set parent mode expiry (10 minutes from now)
         val expiryTime = System.currentTimeMillis() + (10 * 60 * 1000)
-        preferencesManager.setParentModeExpiry(expiryTime)
+        viewModelScope.launch {
+            preferencesManager.setParentModeExpiry(expiryTime)
+        }
         
         _uiState.update { 
             it.copy(
