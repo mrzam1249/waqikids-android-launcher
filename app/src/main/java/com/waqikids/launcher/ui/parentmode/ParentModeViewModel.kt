@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.waqikids.launcher.data.api.WaqiApi
 import com.waqikids.launcher.data.api.dto.PinVerifyRequest
 import com.waqikids.launcher.data.local.PreferencesManager
+import com.waqikids.launcher.service.WaqiAccessibilityService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -159,6 +160,10 @@ class ParentModeViewModel @Inject constructor(
     private fun onUnlockSuccess() {
         // Set parent mode expiry (10 minutes from now)
         val expiryTime = System.currentTimeMillis() + (10 * 60 * 1000)
+        
+        // Activate parent mode in accessibility service to allow Settings/Play Store
+        WaqiAccessibilityService.setParentModeActive(10)
+        
         viewModelScope.launch {
             preferencesManager.setParentModeExpiry(expiryTime)
         }
