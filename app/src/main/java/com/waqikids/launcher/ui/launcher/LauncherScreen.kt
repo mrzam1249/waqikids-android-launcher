@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -38,6 +39,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -50,6 +52,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -74,6 +77,12 @@ import com.waqikids.launcher.ui.launcher.components.PrayerTimeCard
 import com.waqikids.launcher.ui.theme.BackgroundEnd
 import com.waqikids.launcher.ui.theme.BackgroundStart
 import com.waqikids.launcher.ui.theme.KidBlue
+import com.waqikids.launcher.ui.theme.KidGreen
+import com.waqikids.launcher.ui.theme.KidOrange
+import com.waqikids.launcher.ui.theme.KidPink
+import com.waqikids.launcher.ui.theme.KidPurple
+import com.waqikids.launcher.ui.theme.KidTeal
+import com.waqikids.launcher.ui.theme.KidYellow
 import com.waqikids.launcher.ui.theme.Primary
 import java.util.Calendar
 
@@ -93,9 +102,19 @@ fun LauncherScreen(
     
     val greeting = remember {
         when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
-            in 0..11 -> "Good morning"
+            in 0..5 -> "Good night"
+            in 6..11 -> "Good morning"
             in 12..16 -> "Good afternoon"
             else -> "Good evening"
+        }
+    }
+    
+    val greetingEmoji = remember {
+        when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+            in 0..5 -> "🌙"
+            in 6..11 -> "☀️"
+            in 12..16 -> "🌤️"
+            else -> "🌅"
         }
     }
     
@@ -104,38 +123,76 @@ fun LauncherScreen(
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(BackgroundStart, BackgroundEnd)
+                    colors = listOf(
+                        Color(0xFFE0F2FE),  // Light sky blue
+                        Color(0xFFFCE7F3),  // Light pink
+                        Color(0xFFFEF3C7)   // Light warm yellow
+                    )
                 )
             )
     ) {
-        // Animated clouds in background
+        // Decorative background elements
+        Box(
+            modifier = Modifier
+                .offset(x = (-50).dp, y = 100.dp)
+                .size(200.dp)
+                .blur(60.dp)
+                .background(
+                    color = KidPurple.copy(alpha = 0.3f),
+                    shape = CircleShape
+                )
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 50.dp, y = 200.dp)
+                .size(150.dp)
+                .blur(50.dp)
+                .background(
+                    color = KidBlue.copy(alpha = 0.3f),
+                    shape = CircleShape
+                )
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = 30.dp, y = (-100).dp)
+                .size(180.dp)
+                .blur(55.dp)
+                .background(
+                    color = KidPink.copy(alpha = 0.25f),
+                    shape = CircleShape
+                )
+        )
+        
+        // Animated clouds
         AnimatedCloud(
             modifier = Modifier
-                .offset(x = 20.dp, y = 120.dp)
-                .size(80.dp, 40.dp),
-            duration = 8000
+                .offset(x = 20.dp, y = 80.dp)
+                .size(90.dp, 45.dp),
+            duration = 9000
         )
         AnimatedCloud(
             modifier = Modifier
-                .offset(x = 280.dp, y = 80.dp)
-                .size(60.dp, 30.dp),
-            duration = 10000
-        )
-        AnimatedCloud(
-            modifier = Modifier
-                .offset(x = 150.dp, y = 200.dp)
+                .offset(x = 260.dp, y = 60.dp)
                 .size(70.dp, 35.dp),
-            duration = 12000
+            duration = 11000
+        )
+        AnimatedCloud(
+            modifier = Modifier
+                .offset(x = 140.dp, y = 140.dp)
+                .size(60.dp, 30.dp),
+            duration = 13000
         )
         
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             // Top Bar with Parent Mode Button
             Row(
@@ -143,73 +200,96 @@ fun LauncherScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Greeting
-                Column {
+                // Greeting with fun styling
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "$greeting,",
+                        text = "$greeting $greetingEmoji",
                         style = MaterialTheme.typography.bodyLarge,
                         color = Primary.copy(alpha = 0.7f)
                     )
-                    Text(
-                        text = "$childName! 👋",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = Primary
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = childName,
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 32.sp
+                            ),
+                            color = Primary
+                        )
+                        Text(
+                            text = " 👋",
+                            fontSize = 28.sp
+                        )
+                    }
                 }
+                
+                Spacer(modifier = Modifier.width(8.dp))
                 
                 // Parent Mode Button
                 ParentModeButton(onClick = onNavigateToParentMode)
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
-            // Time Remaining Card - Compact
-            TimeRemainingCompact(timeRemaining = timeRemaining)
+            // Time Remaining Card - Fun Design
+            TimeRemainingCard(timeRemaining = timeRemaining)
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             // Prayer Time Card
             PrayerTimeCard(prayerTimes = prayerTimes)
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
-            // Did You Know Card
+            // Did You Know Section
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "✨ Islamic Facts",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = Primary
-                )
-                IconButton(onClick = { viewModel.refreshFact() }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "✨", fontSize = 24.sp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Fun Facts",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Primary
+                    )
+                }
+                IconButton(
+                    onClick = { viewModel.refreshFact() },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Primary.copy(alpha = 0.1f))
+                ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "New Fact",
-                        tint = Primary.copy(alpha = 0.6f)
+                        tint = Primary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
             
+            Spacer(modifier = Modifier.height(12.dp))
+            
             DidYouKnowCard(fact = currentFact)
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
-            // Dhikr Card
-            Text(
-                text = "📿 Daily Dhikr",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = Primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            // Dhikr Section
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "📿", fontSize = 24.sp)
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Daily Dhikr",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Primary
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
             
             DhikrCard(
                 dhikr = currentDhikr,
@@ -219,47 +299,26 @@ fun LauncherScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             // App Grid Header
-            Text(
-                text = "🎮 My Apps",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = Primary
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "📲", fontSize = 24.sp)
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "My Apps",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Primary
+                )
+            }
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             // App Grid
             if (apps.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "📱",
-                            fontSize = 48.sp
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "No apps available yet",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Primary.copy(alpha = 0.6f)
-                        )
-                        Text(
-                            text = "Ask your parent to add some apps!",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Primary.copy(alpha = 0.4f)
-                        )
-                    }
-                }
+                EmptyAppsCard()
             } else {
-                // Horizontal scrolling app row for better UX
+                // Horizontal scrolling app row
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
                 ) {
                     lazyItems(apps, key = { it.packageName }) { app ->
                         AppIconItem(
@@ -270,63 +329,139 @@ fun LauncherScreen(
                 }
             }
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
 
 @Composable
-private fun TimeRemainingCompact(timeRemaining: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.9f)
+private fun TimeRemainingCard(timeRemaining: String) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulse by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000),
+            repeatMode = RepeatMode.Reverse
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        label = "pulse"
+    )
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 20.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = KidBlue.copy(alpha = 0.3f)
+            ),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFF06B6D4),  // Cyan
+                            Color(0xFF3B82F6)   // Blue
+                        )
+                    )
+                )
+                .padding(20.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(KidBlue.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.AccessTime,
-                    contentDescription = null,
-                    tint = KidBlue,
-                    modifier = Modifier.size(22.dp)
-                )
+                // Animated icon
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .scale(pulse)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.2f))
+                        .border(2.dp, Color.White.copy(alpha = 0.3f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "⏰",
+                        fontSize = 28.sp
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(16.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Screen Time Left",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = timeRemaining,
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.ExtraBold
+                        ),
+                        color = Color.White
+                    )
+                }
+                
+                // Fun badge
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.2f))
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "🎯 Focus!",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color.White
+                    )
+                }
             }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Time remaining today",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = timeRemaining,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = KidBlue
-                )
-            }
-            
-            // Progress indicator could go here
+        }
+    }
+}
+
+@Composable
+private fun EmptyAppsCard() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.7f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
-                text = "⏰",
-                fontSize = 24.sp
+                text = "📱",
+                fontSize = 48.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "No apps yet!",
+                style = MaterialTheme.typography.titleMedium,
+                color = Primary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Ask your parent to add some apps 🙏",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Primary.copy(alpha = 0.6f)
             )
         }
     }
@@ -341,22 +476,27 @@ private fun AppIconItem(
     val isPressed by interactionSource.collectIsPressedAsState()
     
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.9f else 1f,
+        targetValue = if (isPressed) 0.92f else 1f,
         animationSpec = tween(100),
         label = "scale"
     )
     
-    // Bounce animation
+    // Gentle bounce animation
     val infiniteTransition = rememberInfiniteTransition(label = "bounce")
     val bounce by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 4f,
+        targetValue = 3f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500),
+            animation = tween(2000),
             repeatMode = RepeatMode.Reverse
         ),
         label = "bounce"
     )
+    
+    // Get a fun color based on app index
+    val appColors = listOf(KidBlue, KidGreen, KidPurple, KidPink, KidOrange, KidTeal, KidYellow)
+    val colorIndex = remember { (0..appColors.lastIndex).random() }
+    val appColor = appColors[colorIndex]
     
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -369,18 +509,28 @@ private fun AppIconItem(
                 onClick = onClick
             )
     ) {
-        // App icon with shadow
+        // App icon with colorful shadow
         Box(
             modifier = Modifier
-                .size(68.dp)
+                .size(76.dp)
                 .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(18.dp),
-                    spotColor = Primary.copy(alpha = 0.3f)
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(22.dp),
+                    spotColor = appColor.copy(alpha = 0.4f)
                 )
-                .clip(RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(22.dp))
                 .background(Color.White)
-                .padding(2.dp),
+                .border(
+                    width = 3.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            appColor.copy(alpha = 0.5f),
+                            appColor.copy(alpha = 0.2f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(22.dp)
+                )
+                .padding(4.dp),
             contentAlignment = Alignment.Center
         ) {
             val bitmap = remember(app.icon) {
@@ -390,25 +540,31 @@ private fun AppIconItem(
                 painter = BitmapPainter(bitmap.asImageBitmap()),
                 contentDescription = app.name,
                 modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(18.dp))
             )
         }
         
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         
-        // App name
-        Text(
-            text = app.name,
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = FontWeight.Medium,
-                fontSize = 12.sp
-            ),
-            color = Primary,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(76.dp)
-        )
+        // App name with background pill
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color.White.copy(alpha = 0.8f))
+                .padding(horizontal = 10.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = app.name,
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = Primary,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.width(72.dp)
+            )
+        }
     }
 }

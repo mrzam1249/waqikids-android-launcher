@@ -141,67 +141,68 @@ fun DhikrCard(
                     tapCount = 0
                 }
             },
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFF0FDF4)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Category badge
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(14.dp))
                     .background(Color(0xFF10B981).copy(alpha = 0.2f))
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
                 Text(
                     text = "📿 ${dhikr.category} Adhkar",
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                     color = Color(0xFF047857),
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.SemiBold
                 )
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             
             // Arabic text
             Text(
                 text = dhikr.arabic,
-                fontSize = 26.sp,
+                fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1F2937),
                 textAlign = TextAlign.Center,
-                lineHeight = 40.sp
+                lineHeight = 44.sp
             )
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             
             // Transliteration
             Text(
                 text = dhikr.transliteration,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 color = Color(0xFF6B7280),
                 textAlign = TextAlign.Center,
                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             
             // Translation
             Text(
                 text = dhikr.translation,
-                fontSize = 13.sp,
+                fontSize = 15.sp,
                 color = Color(0xFF4B5563),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                lineHeight = 22.sp
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             
             // Counter
             Row(
@@ -210,18 +211,19 @@ fun DhikrCard(
             ) {
                 Text(
                     text = "Tap to count: ",
-                    fontSize = 12.sp,
-                    color = Color(0xFF6B7280)
+                    fontSize = 14.sp,
+                    color = Color(0xFF6B7280),
+                    fontWeight = FontWeight.Medium
                 )
                 Box(
                     modifier = Modifier
-                        .clip(CircleShape)
+                        .clip(RoundedCornerShape(16.dp))
                         .background(Color(0xFF10B981))
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .padding(horizontal = 18.dp, vertical = 8.dp)
                 ) {
                     Text(
                         text = "$tapCount/${dhikr.count}",
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -252,61 +254,60 @@ fun DidYouKnowCard(
     
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFFFEF3C7)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(20.dp),
             verticalAlignment = Alignment.Top
         ) {
             // Emoji with bounce
             Box(
                 modifier = Modifier
                     .offset(y = bounce.dp)
-                    .size(48.dp)
+                    .size(56.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFFBBF24).copy(alpha = 0.3f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = fact.emoji,
-                    fontSize = 24.sp
+                    fontSize = 28.sp
                 )
             }
             
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "💡 Did You Know?",
-                        fontSize = 12.sp,
-                        color = Color(0xFF92400E),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                Text(
+                    text = "💡 Did You Know?",
+                    fontSize = 14.sp,
+                    color = Color(0xFF92400E),
+                    fontWeight = FontWeight.Bold
+                )
                 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 
                 Text(
                     text = fact.title,
-                    fontSize = 16.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
+                    color = Color(0xFF1F2937),
+                    lineHeight = 24.sp
                 )
                 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 
                 Text(
                     text = fact.fact,
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                     color = Color(0xFF4B5563),
-                    lineHeight = 20.sp
+                    lineHeight = 23.sp
                 )
             }
         }
@@ -314,7 +315,7 @@ fun DidYouKnowCard(
 }
 
 /**
- * Parent Mode Access Button - Visible and accessible for parents
+ * Parent Mode Access Button - Minimal, sleek design
  */
 @Composable
 fun ParentModeButton(
@@ -326,54 +327,35 @@ fun ParentModeButton(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(20000, easing = LinearEasing),
+            animation = tween(8000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation"
     )
     
-    // Pulse animation to draw attention
-    val pulse by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
-    
-    Card(
+    Box(
         modifier = modifier
-            .scale(pulse)
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF6366F1),
+                        Color(0xFF8B5CF6)
+                    )
+                )
+            )
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF6366F1)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        contentAlignment = Alignment.Center
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Parent Mode",
-                tint = Color.White,
-                modifier = Modifier
-                    .size(20.dp)
-                    .rotate(rotation)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Parent",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
-            )
-        }
+        Icon(
+            imageVector = Icons.Default.Settings,
+            contentDescription = "Parent Mode",
+            tint = Color.White,
+            modifier = Modifier
+                .size(22.dp)
+                .rotate(rotation)
+        )
     }
 }
 
