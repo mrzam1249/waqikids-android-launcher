@@ -111,26 +111,93 @@ private fun ParentModeMenu(
     onOpenPlayStore: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
+    var showExitConfirmation by remember { mutableStateOf(false) }
+    
+    // Exit confirmation dialog
+    if (showExitConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmation = false },
+            containerColor = Color(0xFF1E1B4B),
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFEF4444).copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = null,
+                        tint = Color(0xFFEF4444),
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            },
+            title = {
+                Text(
+                    text = "Exit Parent Mode?",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = "You'll need to re-enter your PIN to access Parent Mode again.",
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showExitConfirmation = false
+                        onDismiss()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFEF4444)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Exit Parent Mode",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showExitConfirmation = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Stay in Parent Mode",
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        )
+    }
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Close button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            IconButton(onClick = onDismiss) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = Color.White.copy(alpha = 0.7f)
-                )
-            }
-        }
-        
         Spacer(modifier = Modifier.height(40.dp))
         
         // Unlocked icon
@@ -187,10 +254,39 @@ private fun ParentModeMenu(
         
         Spacer(modifier = Modifier.weight(1f))
         
+        // Enterprise Exit Button
+        Button(
+            onClick = { showExitConfirmation = true },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFEF4444).copy(alpha = 0.15f)
+            ),
+            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.ExitToApp,
+                contentDescription = null,
+                tint = Color(0xFFEF4444),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "Exit Parent Mode",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFFEF4444)
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
+        
         Text(
-            text = "Tap outside or press back to return to launcher",
-            fontSize = 14.sp,
-            color = Color.White.copy(alpha = 0.5f),
+            text = "Exiting will lock device to child mode",
+            fontSize = 12.sp,
+            color = Color.White.copy(alpha = 0.4f),
             textAlign = TextAlign.Center
         )
         

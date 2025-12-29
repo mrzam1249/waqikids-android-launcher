@@ -10,13 +10,13 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,16 +26,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,12 +66,13 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.waqikids.launcher.domain.model.AppInfo
 import com.waqikids.launcher.ui.launcher.components.AnimatedCloud
+import com.waqikids.launcher.ui.launcher.components.DhikrCard
+import com.waqikids.launcher.ui.launcher.components.DidYouKnowCard
+import com.waqikids.launcher.ui.launcher.components.ParentModeButton
+import com.waqikids.launcher.ui.launcher.components.PrayerTimeCard
 import com.waqikids.launcher.ui.theme.BackgroundEnd
 import com.waqikids.launcher.ui.theme.BackgroundStart
-import com.waqikids.launcher.ui.theme.CloudWhite
 import com.waqikids.launcher.ui.theme.KidBlue
-import com.waqikids.launcher.ui.theme.KidPink
-import com.waqikids.launcher.ui.theme.KidPurple
 import com.waqikids.launcher.ui.theme.Primary
 import java.util.Calendar
 
@@ -79,6 +85,9 @@ fun LauncherScreen(
     val apps by viewModel.allowedApps.collectAsState(initial = emptyList())
     val childName by viewModel.childName.collectAsState(initial = "Child")
     val timeRemaining by viewModel.timeRemaining.collectAsState(initial = "2h 30m")
+    val prayerTimes by viewModel.prayerTimes.collectAsState()
+    val currentDhikr by viewModel.currentDhikr.collectAsState()
+    val currentFact by viewModel.currentFact.collectAsState()
     val context = LocalContext.current
     
     val greeting = remember {
@@ -122,40 +131,134 @@ fun LauncherScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
-            // Greeting Header
-            GreetingHeader(
-                greeting = greeting,
-                childName = childName,
-                timeRemaining = timeRemaining
+            // Top Bar with Parent Mode Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Greeting
+                Column {
+                    Text(
+                        text = "$greeting,",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Primary.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = "$childName! 👋",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Primary
+                    )
+                }
+                
+                // Parent Mode Button
+                ParentModeButton(onClick = onNavigateToParentMode)
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Time Remaining Card - Compact
+            TimeRemainingCompact(timeRemaining = timeRemaining)
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Prayer Time Card
+            PrayerTimeCard(prayerTimes = prayerTimes)
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Did You Know Card
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "✨ Islamic Facts",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = Primary
+                )
+                IconButton(onClick = { viewModel.refreshFact() }) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "New Fact",
+                        tint = Primary.copy(alpha = 0.6f)
+                    )
+                }
+            }
+            
+            DidYouKnowCard(fact = currentFact)
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Dhikr Card
+            Text(
+                text = "📿 Daily Dhikr",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = Primary,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
             
-            Spacer(modifier = Modifier.height(40.dp))
+            DhikrCard(
+                dhikr = currentDhikr,
+                onTap = { viewModel.nextDhikr() }
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // App Grid Header
+            Text(
+                text = "🎮 My Apps",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = Primary
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
             
             // App Grid
             if (apps.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .height(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "No apps available yet",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Primary.copy(alpha = 0.6f)
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "📱",
+                            fontSize = 48.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "No apps available yet",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Primary.copy(alpha = 0.6f)
+                        )
+                        Text(
+                            text = "Ask your parent to add some apps!",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Primary.copy(alpha = 0.4f)
+                        )
+                    }
                 }
             } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(4),
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(vertical = 16.dp),
+                // Horizontal scrolling app row for better UX
+                LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                    contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
                     items(apps, key = { it.packageName }) { app ->
                         AppIconItem(
@@ -166,90 +269,64 @@ fun LauncherScreen(
                 }
             }
             
-            // Decorative bottom elements (long-press for parent mode)
-            DecorativeFooter(onLongPress = onNavigateToParentMode)
-            
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
 @Composable
-private fun GreetingHeader(
-    greeting: String,
-    childName: String,
-    timeRemaining: String
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
+private fun TimeRemainingCompact(timeRemaining: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White.copy(alpha = 0.9f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        // Greeting
-        Text(
-            text = "$greeting,",
-            style = MaterialTheme.typography.headlineSmall,
-            color = Primary.copy(alpha = 0.7f)
-        )
-        
-        Text(
-            text = "$childName! 👋",
-            style = MaterialTheme.typography.displaySmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = Primary
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Time remaining card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White.copy(alpha = 0.9f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(KidBlue.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
             ) {
-                androidx.compose.foundation.layout.Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(KidBlue.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AccessTime,
-                            contentDescription = null,
-                            tint = KidBlue,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.width(16.dp))
-                    
-                    Column {
-                        Text(
-                            text = "Time remaining today",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = timeRemaining,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = KidBlue
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Default.AccessTime,
+                    contentDescription = null,
+                    tint = KidBlue,
+                    modifier = Modifier.size(22.dp)
+                )
             }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Time remaining today",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = timeRemaining,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = KidBlue
+                )
+            }
+            
+            // Progress indicator could go here
+            Text(
+                text = "⏰",
+                fontSize = 24.sp
+            )
         }
     }
 }
@@ -294,13 +371,13 @@ private fun AppIconItem(
         // App icon with shadow
         Box(
             modifier = Modifier
-                .size(64.dp)
+                .size(68.dp)
                 .shadow(
                     elevation = 8.dp,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(18.dp),
                     spotColor = Primary.copy(alpha = 0.3f)
                 )
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(18.dp))
                 .background(Color.White)
                 .padding(2.dp),
             contentAlignment = Alignment.Center
@@ -312,8 +389,8 @@ private fun AppIconItem(
                 painter = BitmapPainter(bitmap.asImageBitmap()),
                 contentDescription = app.name,
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(14.dp))
             )
         }
         
@@ -324,37 +401,13 @@ private fun AppIconItem(
             text = app.name,
             style = MaterialTheme.typography.labelMedium.copy(
                 fontWeight = FontWeight.Medium,
-                fontSize = 11.sp
+                fontSize = 12.sp
             ),
             color = Primary,
             textAlign = TextAlign.Center,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(72.dp)
-        )
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun DecorativeFooter(
-    onLongPress: () -> Unit = {}
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = { /* no-op */ },
-                onLongClick = onLongPress,
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "🌈  🦋  ✨  🌻  🐝  ⭐  🌸",
-            style = MaterialTheme.typography.titleLarge,
-            letterSpacing = 4.sp
+            modifier = Modifier.width(76.dp)
         )
     }
 }
