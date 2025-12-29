@@ -13,12 +13,28 @@ import com.waqikids.launcher.util.Constants
  * - Other launcher apps
  * 
  * When a blocked app is detected, it immediately returns user to WaqiKids launcher
+ * EXCEPTION: When Parent Mode is active (unlocked with PIN), these apps are allowed
  */
 class WaqiAccessibilityService : AccessibilityService() {
     
     companion object {
         var isRunning = false
             private set
+        
+        // Parent Mode expiry timestamp (set when parent unlocks with PIN)
+        var parentModeExpiresAt: Long = 0L
+        
+        fun isParentModeActive(): Boolean {
+            return System.currentTimeMillis() < parentModeExpiresAt
+        }
+        
+        fun setParentModeActive(durationMinutes: Int = 10) {
+            parentModeExpiresAt = System.currentTimeMillis() + (durationMinutes * 60 * 1000L)
+        }
+        
+        fun clearParentMode() {
+            parentModeExpiresAt = 0L
+        }
     }
     
     override fun onServiceConnected() {
@@ -50,7 +66,17 @@ class WaqiAccessibilityService : AccessibilityService() {
     }
     
     private fun shouldBlockApp(packageName: String): Boolean {
-        // Always block these packages
+        // If Parent Mode is active, allow Settings and Play Store
+        if (isParentModeActive()) {
+            // Only block other launchers during parent mode
+            if (packageName.contains("launcher", ignoreCase = true) &&
+                packageName != "com.waqikids.launcher") {
+                return true
+            }
+            return false
+        }
+        
+        // Normal mode - block these packages
         return packageName in Constants.BLOCKED_PACKAGES ||
                 packageName == "com.android.settings" ||
                 packageName == "com.android.vending" ||  // Play Store
