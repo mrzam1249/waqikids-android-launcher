@@ -2,9 +2,12 @@ package com.waqikids.launcher.ui.pairing
 
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.messaging.FirebaseMessaging
 import com.waqikids.launcher.data.api.WaqiApi
+import com.waqikids.launcher.data.api.dto.FcmTokenRequest
 import com.waqikids.launcher.data.api.dto.PairRequest
 import com.waqikids.launcher.data.local.PreferencesManager
 import com.waqikids.launcher.domain.model.DeviceConfig
@@ -13,8 +16,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.UUID
 import javax.inject.Inject
+
+private const val TAG = "PairingViewModel"
 
 @HiltViewModel
 class PairingViewModel @Inject constructor(
@@ -47,8 +53,13 @@ class PairingViewModel @Inject constructor(
     fun pairDevice(code: String, onResult: (success: Boolean, error: String?) -> Unit) {
         viewModelScope.launch {
             try {
+                Log.i(TAG, "========== PAIRING DEVICE ==========")
                 val deviceId = getOrCreateDeviceId()
                 val deviceName = getDeviceName()
+                
+                Log.i(TAG, "Device ID: $deviceId")
+                Log.i(TAG, "Device Name: $deviceName")
+                Log.i(TAG, "Pairing Code: $code")
                 
                 val request = PairRequest(
                     childDeviceId = deviceId,
@@ -57,10 +68,15 @@ class PairingViewModel @Inject constructor(
                     pairingCode = code.trim()
                 )
                 
+                Log.i(TAG, "Calling backend /api/devices/pair ...")
                 val response = api.pairDevice(request)
+                
+                Log.i(TAG, "Response code: ${response.code()}")
                 
                 if (response.isSuccessful && response.body()?.success == true) {
                     val body = response.body()!!
+                    Log.i(TAG, "PAIRING SUCCESS!")
+                    Log.i(TAG, "Parent ID: ${body.parentId}")
                     
                     // Save config locally
                     val config = DeviceConfig(
@@ -75,16 +91,53 @@ class PairingViewModel @Inject constructor(
                     )
                     
                     preferencesManager.saveDeviceConfig(config)
+                    Log.i(TAG, "Device config saved to DataStore")
+                    
+                    // IMPORTANT: Register FCM token immediately after pairing!
+                    registerFcmTokenAfterPairing(deviceId)
+                    
+                    Log.i(TAG, "=====================================")
                     onResult(true, null)
                 } else {
                     val errorMsg = response.body()?.error 
                         ?: response.errorBody()?.string()
                         ?: "Pairing failed. Please check the code and try again."
+                    Log.e(TAG, "PAIRING FAILED: $errorMsg")
                     onResult(false, errorMsg)
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "PAIRING ERROR", e)
                 onResult(false, "Connection error: ${e.message}")
             }
+        }
+    }
+    
+    /**
+     * Register FCM token immediately after successful pairing
+     * This ensures push notifications work from the start
+     */
+    private suspend fun registerFcmTokenAfterPairing(deviceId: String) {
+        try {
+            Log.i(TAG, "======== REGISTERING FCM TOKEN (post-pairing) ========")
+            val token = FirebaseMessaging.getInstance().token.await()
+            Log.i(TAG, "FCM Token: ${token.take(40)}...")
+            
+            val request = FcmTokenRequest(
+                deviceId = deviceId,
+                fcmToken = token,
+                platform = "android"
+            )
+            
+            val response = api.registerFcmToken(request)
+            
+            if (response.isSuccessful) {
+                Log.i(TAG, "SUCCESS: FCM token registered immediately after pairing!")
+            } else {
+                Log.e(TAG, "FAILED to register FCM token: ${response.code()}")
+            }
+            Log.i(TAG, "======================================================")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error registering FCM token after pairing", e)
         }
     }
 }
