@@ -268,6 +268,13 @@ class PreferencesManager @Inject constructor(
         val lastSync = context.dataStore.data.map { prefs ->
             prefs[Keys.LAST_DOMAINS_SYNC] ?: 0L
         }.first()
+        
+        // Also check if domains are empty - force sync if no domains cached
+        val domains = getAllowedDomainsSync()
+        if (domains.isEmpty()) {
+            return false  // Force sync if no domains
+        }
+        
         return System.currentTimeMillis() - lastSync < DOMAINS_CACHE_DURATION_MS
     }
     

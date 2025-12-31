@@ -9,8 +9,10 @@ import android.content.Intent
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.google.firebase.messaging.FirebaseMessaging
 import com.waqikids.launcher.R
 import com.waqikids.launcher.data.api.WaqiApi
+import com.waqikids.launcher.data.api.dto.FcmTokenRequest
 import com.waqikids.launcher.data.api.dto.SyncAppItem
 import com.waqikids.launcher.data.api.dto.SyncAppsRequest
 import com.waqikids.launcher.data.local.PreferencesManager
@@ -26,6 +28,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 /**
@@ -97,6 +100,9 @@ class SyncService : Service() {
             // Initial sync after a short delay
             delay(5000)
             
+            // Register FCM token on startup (important for push notifications)
+            registerFcmToken()
+            
             while (isActive) {
                 try {
                     syncWithBackend()
@@ -105,6 +111,39 @@ class SyncService : Service() {
                 }
                 delay(Constants.SYNC_INTERVAL_MINUTES * 60 * 1000L)
             }
+        }
+    }
+    
+    /**
+     * Register FCM token with backend for push notifications
+     * Called on every app startup to ensure token is always registered
+     */
+    private suspend fun registerFcmToken() {
+        try {
+            val deviceId = preferencesManager.getDeviceId() ?: run {
+                Log.w(TAG, "No device ID, cannot register FCM token")
+                return
+            }
+            
+            // Get current FCM token
+            val token = FirebaseMessaging.getInstance().token.await()
+            Log.d(TAG, "FCM token: ${token.take(20)}...")
+            
+            val request = FcmTokenRequest(
+                deviceId = deviceId,
+                fcmToken = token,
+                platform = "android"
+            )
+            
+            val response = api.registerFcmToken(request)
+            
+            if (response.isSuccessful) {
+                Log.i(TAG, "FCM token registered with backend successfully")
+            } else {
+                Log.e(TAG, "Failed to register FCM token: ${response.code()} ${response.message()}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error registering FCM token", e)
         }
     }
     

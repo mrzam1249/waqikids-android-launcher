@@ -1,8 +1,11 @@
 package com.waqikids.launcher.ui.setup
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessibilityNew
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Button
@@ -53,6 +57,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.waqikids.launcher.R
 import com.waqikids.launcher.service.DnsVpnService
@@ -60,6 +65,7 @@ import com.waqikids.launcher.ui.theme.BackgroundEnd
 import com.waqikids.launcher.ui.theme.BackgroundStart
 import com.waqikids.launcher.ui.theme.KidBlue
 import com.waqikids.launcher.ui.theme.KidGreen
+import com.waqikids.launcher.ui.theme.KidOrange
 import com.waqikids.launcher.ui.theme.KidPink
 import com.waqikids.launcher.ui.theme.KidPurple
 import com.waqikids.launcher.ui.theme.Primary
@@ -77,6 +83,43 @@ fun SetupWizardScreen(
     
     // VPN permission state
     var vpnPermissionGranted by remember { mutableStateOf(false) }
+    
+    // Notification permission state (Android 13+)
+    var notificationPermissionGranted by remember { 
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true // Not needed below Android 13
+            }
+        )
+    }
+    
+    // Notification permission launcher (Android 13+)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        notificationPermissionGranted = isGranted
+        if (isGranted) {
+            Toast.makeText(context, "Notifications enabled!", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "Notifications help keep protection active", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    // Function to request notification permission
+    val requestNotificationPermission: () -> Unit = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                notificationPermissionGranted = true
+                Toast.makeText(context, "Notifications already enabled!", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            notificationPermissionGranted = true
+        }
+    }
     
     // VPN permission launcher
     val vpnPermissionLauncher = rememberLauncherForActivityResult(
@@ -135,6 +178,15 @@ fun SetupWizardScreen(
                 val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                 context.startActivity(intent)
             }
+        ),
+        SetupStepData(
+            icon = Icons.Default.Notifications,
+            iconColor = KidOrange,
+            title = "Enable Notifications",
+            subtitle = "Allow notifications to receive instant updates when parents change settings.",
+            buttonText = if (notificationPermissionGranted) "Notifications Enabled ✓" else "Enable Notifications",
+            action = requestNotificationPermission,
+            extraContent = { NotificationSetupContent(notificationPermissionGranted) }
         ),
         SetupStepData(
             icon = Icons.Default.VpnKey,
@@ -299,6 +351,64 @@ fun SetupWizardScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+@Composable
+private fun NotificationSetupContent(isEnabled: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isEnabled) Success.copy(alpha = 0.1f) else Color.White
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.Notifications,
+                contentDescription = null,
+                tint = if (isEnabled) Success else KidOrange,
+                modifier = Modifier.size(48.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = if (isEnabled) "Notifications Active" else "Enable Notifications",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = if (isEnabled) Success else Primary
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = if (isEnabled) 
+                    "You'll receive instant updates when parents change settings." 
+                else 
+                    "Notifications allow instant syncing when parents update website permissions.",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+    
+    Spacer(modifier = Modifier.height(16.dp))
+    
+    // Benefits list
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        VpnBenefitItem("✓ Instant updates from parents")
+        VpnBenefitItem("✓ Real-time website permission changes")
+        VpnBenefitItem("✓ Protection status notifications")
     }
 }
 
