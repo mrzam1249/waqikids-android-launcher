@@ -1,10 +1,12 @@
 package com.waqikids.launcher.ui.setup
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
+import android.app.Activity
 import android.content.Intent
+import android.net.VpnService
 import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,24 +24,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessibilityNew
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.waqikids.launcher.R
+import com.waqikids.launcher.service.DnsVpnService
 import com.waqikids.launcher.ui.theme.BackgroundEnd
 import com.waqikids.launcher.ui.theme.BackgroundStart
 import com.waqikids.launcher.ui.theme.KidBlue
@@ -61,7 +64,6 @@ import com.waqikids.launcher.ui.theme.KidPink
 import com.waqikids.launcher.ui.theme.KidPurple
 import com.waqikids.launcher.ui.theme.Primary
 import com.waqikids.launcher.ui.theme.Success
-import com.waqikids.launcher.util.Constants
 import kotlinx.coroutines.launch
 
 @Composable
@@ -72,11 +74,41 @@ fun SetupWizardScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val currentStep by viewModel.currentSetupStep.collectAsState(initial = 0)
-    val deviceConfig by viewModel.deviceConfig.collectAsState(initial = null)
     
-    val dnsHostname = remember(deviceConfig) {
-        val subdomain = deviceConfig?.dnsSubdomain ?: deviceConfig?.deviceId ?: "child"
-        "$subdomain.${Constants.DNS_BASE_DOMAIN}"
+    // VPN permission state
+    var vpnPermissionGranted by remember { mutableStateOf(false) }
+    
+    // VPN permission launcher
+    val vpnPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            vpnPermissionGranted = true
+            // Start VPN service immediately
+            val vpnIntent = Intent(context, DnsVpnService::class.java).apply {
+                action = DnsVpnService.ACTION_START
+            }
+            context.startForegroundService(vpnIntent)
+            Toast.makeText(context, "Website protection enabled!", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "VPN permission required for website filtering", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    // Function to request VPN permission
+    val requestVpnPermission: () -> Unit = {
+        val prepareIntent = VpnService.prepare(context)
+        if (prepareIntent != null) {
+            vpnPermissionLauncher.launch(prepareIntent)
+        } else {
+            // Already have permission
+            vpnPermissionGranted = true
+            val vpnIntent = Intent(context, DnsVpnService::class.java).apply {
+                action = DnsVpnService.ACTION_START
+            }
+            context.startForegroundService(vpnIntent)
+            Toast.makeText(context, "Website protection enabled!", Toast.LENGTH_SHORT).show()
+        }
     }
     
     val steps = listOf(
@@ -105,22 +137,13 @@ fun SetupWizardScreen(
             }
         ),
         SetupStepData(
-            icon = Icons.Default.Dns,
+            icon = Icons.Default.VpnKey,
             iconColor = KidPurple,
-            title = stringResource(R.string.setup_dns_title),
-            subtitle = stringResource(R.string.setup_dns_subtitle),
-            buttonText = "Open DNS Settings",
-            action = {
-                // Copy DNS hostname to clipboard
-                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                val clip = ClipData.newPlainText("DNS", dnsHostname)
-                clipboard.setPrimaryClip(clip)
-                
-                // Open private DNS settings
-                val intent = Intent(Settings.ACTION_WIRELESS_SETTINGS)
-                context.startActivity(intent)
-            },
-            extraContent = { DnsSetupContent(dnsHostname) }
+            title = "Website Protection",
+            subtitle = "Enable VPN-based filtering to block unsafe websites and allow only parent-approved sites.",
+            buttonText = if (vpnPermissionGranted) "Protection Enabled ✓" else "Enable Website Filter",
+            action = requestVpnPermission,
+            extraContent = { VpnSetupContent(vpnPermissionGranted) }
         ),
         SetupStepData(
             icon = Icons.Default.Security,
@@ -280,58 +303,70 @@ fun SetupWizardScreen(
 }
 
 @Composable
-private fun DnsSetupContent(dnsHostname: String) {
-    val context = LocalContext.current
-    
+private fun VpnSetupContent(isEnabled: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(
+            containerColor = if (isEnabled) Success.copy(alpha = 0.1f) else Color.White
+        )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Private DNS hostname:",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = dnsHostname,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = Primary
-                )
-            }
+            Icon(
+                imageVector = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.VpnKey,
+                contentDescription = null,
+                tint = if (isEnabled) Success else KidPurple,
+                modifier = Modifier.size(48.dp)
+            )
             
-            IconButton(
-                onClick = {
-                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    val clip = ClipData.newPlainText("DNS", dnsHostname)
-                    clipboard.setPrimaryClip(clip)
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ContentCopy,
-                    contentDescription = "Copy",
-                    tint = Primary
-                )
-            }
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = if (isEnabled) "Protection Active" else "Enable VPN Filter",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = if (isEnabled) Success else Primary
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = if (isEnabled) 
+                    "All website traffic is now filtered through WaqiKids protection." 
+                else 
+                    "This creates a local VPN to filter websites. No data leaves your device.",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
     
     Spacer(modifier = Modifier.height(16.dp))
     
+    // Benefits list
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        VpnBenefitItem("✓ Blocks unsafe websites automatically")
+        VpnBenefitItem("✓ Only allows parent-approved sites")
+        VpnBenefitItem("✓ Works across all apps and browsers")
+        VpnBenefitItem("✓ All filtering happens on-device")
+    }
+}
+
+@Composable
+private fun VpnBenefitItem(text: String) {
     Text(
-        text = "Go to Settings → Network → Private DNS → Enter hostname above",
-        style = MaterialTheme.typography.bodySmall,
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
     )
 }
 
