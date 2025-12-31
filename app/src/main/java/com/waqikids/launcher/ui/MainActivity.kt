@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.waqikids.launcher.data.local.PreferencesManager
 import com.waqikids.launcher.service.DnsVpnService
+import com.waqikids.launcher.service.SyncService
 import com.waqikids.launcher.ui.navigation.Screen
 import com.waqikids.launcher.ui.navigation.WaqiNavHost
 import com.waqikids.launcher.ui.theme.BackgroundStart
@@ -52,12 +53,30 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        // Check if VPN should be started (when setup is complete)
+        Log.i(TAG, "========== MAINACTIVITY CREATED ==========")
+        
+        // Observe setup completion and start VPN when it becomes true
+        // This handles both: 1) App restart after setup, 2) First time setup completion
         lifecycleScope.launch {
-            val isSetupComplete = preferencesManager.isSetupComplete.first()
-            if (isSetupComplete) {
-                prepareAndStartVpn()
+            preferencesManager.isSetupComplete.collect { isComplete ->
+                Log.i(TAG, "isSetupComplete changed to: $isComplete")
+                if (isComplete) {
+                    Log.i(TAG, "Setup is complete - preparing VPN and SyncService")
+                    prepareAndStartVpn()
+                }
             }
+        }
+        
+        // Log current state
+        lifecycleScope.launch {
+            val deviceId = preferencesManager.getDeviceId()
+            val isPaired = preferencesManager.isPaired.first()
+            val isSetupComplete = preferencesManager.isSetupComplete.first()
+            Log.i(TAG, "========== DEVICE STATE ==========")
+            Log.i(TAG, "Device ID: $deviceId")
+            Log.i(TAG, "Is Paired: $isPaired")
+            Log.i(TAG, "Is Setup Complete: $isSetupComplete")
+            Log.i(TAG, "===================================")
         }
         
         setContent {
@@ -86,24 +105,37 @@ class MainActivity : ComponentActivity() {
     }
     
     private fun prepareAndStartVpn() {
+        Log.i(TAG, "======== PREPARING VPN ========")
         val prepareIntent = VpnService.prepare(this)
         if (prepareIntent != null) {
             // Need to ask user for VPN permission
-            Log.i(TAG, "Requesting VPN permission from user")
+            Log.i(TAG, "VPN permission NOT granted yet, requesting from user...")
             vpnPermissionLauncher.launch(prepareIntent)
         } else {
             // Already have permission, start VPN
-            Log.i(TAG, "VPN permission already granted, starting VPN service")
+            Log.i(TAG, "VPN permission already granted, starting services...")
             startVpnService()
         }
     }
     
     private fun startVpnService() {
+        Log.i(TAG, "======== STARTING SERVICES ========")
+        
+        // Start VPN service
         val intent = Intent(this, DnsVpnService::class.java).apply {
             action = DnsVpnService.ACTION_START
         }
         startForegroundService(intent)
-        Log.i(TAG, "VPN service started")
+        Log.i(TAG, ">>> DnsVpnService started")
+        
+        // Also start SyncService to register FCM token and sync domains
+        val syncIntent = Intent(this, SyncService::class.java)
+        startForegroundService(syncIntent)
+        Log.i(TAG, ">>> SyncService started")
+        
+        Log.i(TAG, "Both services should now be running!")
+        Log.i(TAG, "Check logcat for: DnsVpnService, SyncService tags")
+        Log.i(TAG, "===================================")
     }
     
     // Disable back button when launcher is active

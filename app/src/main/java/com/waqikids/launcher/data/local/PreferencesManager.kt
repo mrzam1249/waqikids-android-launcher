@@ -1,6 +1,7 @@
 package com.waqikids.launcher.data.local
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -20,6 +21,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "waqikids_prefs")
+
+private const val TAG = "PreferencesManager"
 
 @Singleton
 class PreferencesManager @Inject constructor(
@@ -245,17 +248,28 @@ class PreferencesManager @Inject constructor(
     }
     
     suspend fun updateAllowedDomains(domains: Set<String>, version: Long) {
+        Log.i(TAG, "======== SAVING DOMAINS TO CACHE ========")
+        Log.i(TAG, "Domain count: ${domains.size}")
+        Log.i(TAG, "Version: $version")
+        Log.i(TAG, "Sample: ${domains.take(5)}")
         context.dataStore.edit { prefs ->
             prefs[Keys.ALLOWED_DOMAINS] = domains
             prefs[Keys.DOMAINS_VERSION] = version
             prefs[Keys.LAST_DOMAINS_SYNC] = System.currentTimeMillis()
         }
+        Log.i(TAG, "Domains saved to DataStore successfully")
+        Log.i(TAG, "=========================================")
     }
     
     suspend fun getAllowedDomainsSync(): Set<String> {
-        return context.dataStore.data.map { prefs ->
+        val domains = context.dataStore.data.map { prefs ->
             prefs[Keys.ALLOWED_DOMAINS] ?: emptySet()
         }.first()
+        Log.d(TAG, "getAllowedDomainsSync: ${domains.size} domains")
+        if (domains.isEmpty()) {
+            Log.w(TAG, "WARNING: No domains in cache!")
+        }
+        return domains
     }
     
     suspend fun getDomainsVersion(): Long {
@@ -272,10 +286,14 @@ class PreferencesManager @Inject constructor(
         // Also check if domains are empty - force sync if no domains cached
         val domains = getAllowedDomainsSync()
         if (domains.isEmpty()) {
+            Log.w(TAG, "isDomainsCacheValid: FALSE - domains empty!")
             return false  // Force sync if no domains
         }
         
-        return System.currentTimeMillis() - lastSync < DOMAINS_CACHE_DURATION_MS
+        val isValid = System.currentTimeMillis() - lastSync < DOMAINS_CACHE_DURATION_MS
+        val ageMinutes = (System.currentTimeMillis() - lastSync) / 60000
+        Log.d(TAG, "isDomainsCacheValid: $isValid (age: ${ageMinutes}min, domains: ${domains.size})")
+        return isValid
     }
     
     suspend fun setLastDomainsSync(timestamp: Long = System.currentTimeMillis()) {

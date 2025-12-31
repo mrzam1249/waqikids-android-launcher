@@ -79,15 +79,30 @@ class DnsVpnService : VpnService() {
     
     override fun onCreate() {
         super.onCreate()
+        Log.i(TAG, "========== DNS VPN SERVICE CREATED ==========")
         createNotificationChannel()
         loadWhitelistFromCache()
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.i(TAG, "onStartCommand: action=${intent?.action}")
         when (intent?.action) {
-            ACTION_START -> startVpn()
-            ACTION_STOP -> stopVpn()
-            ACTION_RELOAD_WHITELIST -> reloadWhitelist()
+            ACTION_START -> {
+                Log.i(TAG, ">>> ACTION_START received")
+                startVpn()
+            }
+            ACTION_STOP -> {
+                Log.i(TAG, ">>> ACTION_STOP received")
+                stopVpn()
+            }
+            ACTION_RELOAD_WHITELIST -> {
+                Log.i(TAG, ">>> ACTION_RELOAD_WHITELIST received (push notification triggered)")
+                reloadWhitelist()
+            }
+            null -> {
+                Log.w(TAG, ">>> No action provided, starting VPN by default")
+                startVpn()
+            }
         }
         return START_STICKY
     }
@@ -129,7 +144,11 @@ class DnsVpnService : VpnService() {
             // Start DNS proxy thread
             startDnsProxy()
             
-            Log.i(TAG, "VPN started successfully with ${allowedDomains.size} whitelisted domains")
+            Log.i(TAG, "========================================")
+            Log.i(TAG, "VPN STARTED SUCCESSFULLY")
+            Log.i(TAG, "Whitelisted domains: ${allowedDomains.size}")
+            Log.i(TAG, "First 10 domains: ${allowedDomains.take(10)}")
+            Log.i(TAG, "========================================")
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start VPN", e)
@@ -206,11 +225,14 @@ class DnsVpnService : VpnService() {
         
         if (allowed) {
             // Forward to upstream DNS
+            if (totalQueries % 50 == 1L) {
+                Log.d(TAG, "ALLOWED: $domain (total queries: $totalQueries)")
+            }
             forwardDnsQuery(packet, length, dnsData, outputStream)
         } else {
             // Return NXDOMAIN
             blockedQueries++
-            Log.d(TAG, "BLOCKED: $domain")
+            Log.w(TAG, "BLOCKED: $domain (blocked: $blockedQueries/$totalQueries)")
             sendNxdomainResponse(packet, length, dnsData, outputStream)
         }
     }
@@ -414,12 +436,20 @@ class DnsVpnService : VpnService() {
     private fun loadWhitelistFromCache() {
         runBlocking {
             try {
+                Log.i(TAG, "Loading whitelist from cache...")
                 val domains = preferencesManager.getAllowedDomainsSync()
                 allowedDomains.clear()
                 allowedDomains.addAll(domains.map { it.lowercase() })
-                Log.d(TAG, "Loaded ${allowedDomains.size} domains from cache")
+                Log.i(TAG, "======== WHITELIST LOADED FROM CACHE ========")
+                Log.i(TAG, "Total domains: ${allowedDomains.size}")
+                if (allowedDomains.isEmpty()) {
+                    Log.w(TAG, "WARNING: Whitelist is EMPTY! All sites will be blocked!")
+                } else {
+                    Log.i(TAG, "Sample domains: ${allowedDomains.take(20)}")
+                }
+                Log.i(TAG, "==============================================")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to load whitelist from cache", e)
+                Log.e(TAG, "FAILED to load whitelist from cache", e)
             }
         }
     }
@@ -430,12 +460,20 @@ class DnsVpnService : VpnService() {
     private fun reloadWhitelist() {
         scope.launch {
             try {
+                Log.i(TAG, "======== RELOADING WHITELIST (triggered by FCM) ========")
                 val domains = preferencesManager.getAllowedDomainsSync()
+                val oldCount = allowedDomains.size
                 allowedDomains.clear()
                 allowedDomains.addAll(domains.map { it.lowercase() })
-                Log.i(TAG, "Reloaded ${allowedDomains.size} domains from cache")
+                Log.i(TAG, "Whitelist reloaded: $oldCount -> ${allowedDomains.size} domains")
+                if (allowedDomains.isEmpty()) {
+                    Log.w(TAG, "WARNING: Whitelist is EMPTY after reload!")
+                } else {
+                    Log.i(TAG, "Sample: ${allowedDomains.take(10)}")
+                }
+                Log.i(TAG, "========================================================")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to reload whitelist", e)
+                Log.e(TAG, "FAILED to reload whitelist", e)
             }
         }
     }

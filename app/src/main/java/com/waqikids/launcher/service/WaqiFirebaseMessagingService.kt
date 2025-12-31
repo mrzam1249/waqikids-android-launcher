@@ -51,7 +51,9 @@ class WaqiFirebaseMessagingService : FirebaseMessagingService() {
      */
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d(TAG, "New FCM token: ${token.take(20)}...")
+        Log.i(TAG, "========== NEW FCM TOKEN RECEIVED ==========")
+        Log.i(TAG, "Token: ${token.take(40)}...")
+        Log.i(TAG, "Registering with backend...")
         
         scope.launch {
             registerTokenWithBackend(token)
@@ -68,12 +70,25 @@ class WaqiFirebaseMessagingService : FirebaseMessagingService() {
         val data = message.data
         val notificationType = data["type"] ?: data["notification_type"]
         
-        Log.i(TAG, "FCM received: type=$notificationType")
+        Log.i(TAG, "========== FCM MESSAGE RECEIVED ==========")
+        Log.i(TAG, "Type: $notificationType")
+        Log.i(TAG, "Data: $data")
+        Log.i(TAG, "From: ${message.from}")
+        Log.i(TAG, "==========================================")
         
         when (notificationType) {
-            TYPE_WHITELIST_SYNC -> handleWhitelistSync(data)
-            TYPE_DEVICE_UNPAIRED -> handleDeviceUnpaired()
-            TYPE_APP_ALLOWED, TYPE_APP_BLOCKED -> handleAppChange()
+            TYPE_WHITELIST_SYNC -> {
+                Log.i(TAG, ">>> Handling WHITELIST_SYNC")
+                handleWhitelistSync(data)
+            }
+            TYPE_DEVICE_UNPAIRED -> {
+                Log.i(TAG, ">>> Handling DEVICE_UNPAIRED")
+                handleDeviceUnpaired()
+            }
+            TYPE_APP_ALLOWED, TYPE_APP_BLOCKED -> {
+                Log.i(TAG, ">>> Handling APP change")
+                handleAppChange()
+            }
             else -> Log.w(TAG, "Unknown notification type: $notificationType")
         }
     }
@@ -178,11 +193,15 @@ class WaqiFirebaseMessagingService : FirebaseMessagingService() {
      */
     private suspend fun registerTokenWithBackend(token: String) {
         try {
+            Log.i(TAG, "======== REGISTERING FCM TOKEN (from onNewToken) ========")
             val deviceId = preferencesManager.getDeviceId()
             if (deviceId == null) {
                 Log.w(TAG, "No device ID yet, will register token after pairing")
                 return
             }
+            
+            Log.i(TAG, "Device ID: $deviceId")
+            Log.i(TAG, "Token: ${token.take(40)}...")
             
             val request = FcmTokenRequest(
                 deviceId = deviceId,
@@ -193,12 +212,18 @@ class WaqiFirebaseMessagingService : FirebaseMessagingService() {
             val response = api.registerFcmToken(request)
             
             if (response.isSuccessful) {
-                Log.i(TAG, "FCM token registered with backend")
+                Log.i(TAG, "SUCCESS: FCM token registered with backend!")
+                Log.i(TAG, "Push notifications are now ENABLED")
             } else {
-                Log.e(TAG, "Failed to register FCM token: ${response.code()}")
+                Log.e(TAG, "FAILED to register FCM token: ${response.code()}")
+                try {
+                    Log.e(TAG, "Error body: ${response.errorBody()?.string()}")
+                } catch (e: Exception) { }
             }
+            Log.i(TAG, "=================================================")
         } catch (e: Exception) {
-            Log.e(TAG, "Error registering FCM token", e)
+            Log.e(TAG, "ERROR registering FCM token", e)
+            Log.e(TAG, "Exception: ${e.message}")
         }
     }
 }

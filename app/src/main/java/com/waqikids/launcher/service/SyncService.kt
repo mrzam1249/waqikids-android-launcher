@@ -52,6 +52,7 @@ class SyncService : Service() {
     
     override fun onCreate() {
         super.onCreate()
+        Log.i(TAG, "========== SYNC SERVICE CREATED ==========")
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
         startSyncLoop()
@@ -120,14 +121,17 @@ class SyncService : Service() {
      */
     private suspend fun registerFcmToken() {
         try {
+            Log.i(TAG, "======== REGISTERING FCM TOKEN ========")
             val deviceId = preferencesManager.getDeviceId() ?: run {
-                Log.w(TAG, "No device ID, cannot register FCM token")
+                Log.w(TAG, "No device ID found, cannot register FCM token")
+                Log.w(TAG, "This means device is not paired yet!")
                 return
             }
+            Log.i(TAG, "Device ID: $deviceId")
             
             // Get current FCM token
             val token = FirebaseMessaging.getInstance().token.await()
-            Log.d(TAG, "FCM token: ${token.take(20)}...")
+            Log.i(TAG, "FCM token obtained: ${token.take(30)}...")
             
             val request = FcmTokenRequest(
                 deviceId = deviceId,
@@ -135,46 +139,59 @@ class SyncService : Service() {
                 platform = "android"
             )
             
+            Log.i(TAG, "Sending FCM token to backend...")
             val response = api.registerFcmToken(request)
             
             if (response.isSuccessful) {
-                Log.i(TAG, "FCM token registered with backend successfully")
+                Log.i(TAG, "SUCCESS: FCM token registered with backend")
+                Log.i(TAG, "Push notifications are now enabled!")
             } else {
-                Log.e(TAG, "Failed to register FCM token: ${response.code()} ${response.message()}")
+                Log.e(TAG, "FAILED: FCM registration failed: ${response.code()} ${response.message()}")
+                try {
+                    Log.e(TAG, "Error body: ${response.errorBody()?.string()}")
+                } catch (e: Exception) { }
             }
+            Log.i(TAG, "=========================================")
         } catch (e: Exception) {
-            Log.e(TAG, "Error registering FCM token", e)
+            Log.e(TAG, "ERROR registering FCM token", e)
+            Log.e(TAG, "Exception: ${e.message}")
         }
     }
     
     private suspend fun syncWithBackend() {
         val deviceId = preferencesManager.getDeviceId() ?: run {
-            Log.w(TAG, "No device ID, skipping sync")
+            Log.w(TAG, "No device ID, skipping sync - device not paired?")
             return
         }
         
-        Log.d(TAG, "Starting sync for device: $deviceId")
+        Log.i(TAG, "========== SYNC WITH BACKEND ==========")
+        Log.i(TAG, "Device ID: $deviceId")
         
         // Step 1: Sync installed apps (only if needed - hourly)
         if (preferencesManager.shouldSyncApps()) {
+            Log.i(TAG, "Step 1: Syncing installed apps...")
             syncInstalledApps(deviceId)
         } else {
-            Log.d(TAG, "Skipping app sync - cache still valid")
+            Log.d(TAG, "Step 1: Skipping app sync - cache still valid")
         }
         
         // Step 2: Fetch allowed packages (every 5 min or if cache expired)
         if (!preferencesManager.isAllowedPackagesCacheValid()) {
+            Log.i(TAG, "Step 2: Fetching allowed packages...")
             fetchAllowedPackages(deviceId)
         } else {
-            Log.d(TAG, "Using cached allowed packages")
+            Log.d(TAG, "Step 2: Using cached allowed packages")
         }
         
         // Step 3: Sync domain whitelist for VPN DNS filtering
         if (!preferencesManager.isDomainsCacheValid()) {
+            Log.i(TAG, "Step 3: Syncing domain whitelist...")
             syncDomainWhitelist(deviceId)
         } else {
-            Log.d(TAG, "Using cached domain whitelist")
+            Log.d(TAG, "Step 3: Using cached domain whitelist")
         }
+        
+        Log.i(TAG, "=========================================")
     }
     
     /**
@@ -249,25 +266,44 @@ class SyncService : Service() {
      */
     private suspend fun syncDomainWhitelist(deviceId: String) {
         try {
+            Log.i(TAG, "======== SYNCING DOMAIN WHITELIST ========")
+            Log.i(TAG, "Device ID: $deviceId")
+            Log.i(TAG, "Calling backend /api/whitelist/sync/$deviceId ...")
+            
             val response = api.syncWhitelist(deviceId)
+            
+            Log.i(TAG, "Response code: ${response.code()}")
             
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null && body.status == "success") {
                     val domains = body.domains.toSet()
                     val version = body.version
+                    Log.i(TAG, "SUCCESS: Received ${domains.size} domains")
+                    Log.i(TAG, "Version: $version")
+                    Log.i(TAG, "Sample domains: ${domains.take(10)}")
+                    
                     preferencesManager.updateAllowedDomains(domains, version)
-                    Log.d(TAG, "Domain whitelist synced: ${domains.size} domains, version: $version")
+                    Log.i(TAG, "Domains saved to local cache")
                     
                     // Notify VPN service to reload whitelist
                     notifyVpnWhitelistUpdated()
+                    Log.i(TAG, "VPN service notified to reload")
+                } else {
+                    Log.w(TAG, "Response body null or status != success")
+                    Log.w(TAG, "Body: $body")
                 }
             } else {
-                Log.e(TAG, "Failed to sync domain whitelist: ${response.code()}")
+                Log.e(TAG, "FAILED: Sync failed with code ${response.code()}")
+                try {
+                    Log.e(TAG, "Error body: ${response.errorBody()?.string()}")
+                } catch (e: Exception) { }
                 Log.d(TAG, "Using cached domain whitelist due to network error")
             }
+            Log.i(TAG, "===========================================")
         } catch (e: Exception) {
-            Log.e(TAG, "Error syncing domain whitelist", e)
+            Log.e(TAG, "ERROR syncing domain whitelist", e)
+            Log.e(TAG, "Exception: ${e.message}")
             Log.d(TAG, "Network error - continuing with cached domain whitelist")
         }
     }
