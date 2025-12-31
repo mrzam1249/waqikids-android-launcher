@@ -42,6 +42,22 @@ class PreferencesManager @Inject constructor(
         val CURRENT_SETUP_STEP = intPreferencesKey("current_setup_step")
         val CACHED_PIN_HASH = stringPreferencesKey("cached_pin_hash")
         val PARENT_MODE_EXPIRY = longPreferencesKey("parent_mode_expiry")
+        // Cache timestamps
+        val LAST_APPS_SYNC = longPreferencesKey("last_apps_sync")
+        val LAST_ALLOWED_PACKAGES_FETCH = longPreferencesKey("last_allowed_packages_fetch")
+        // Domain whitelist for VPN DNS filtering
+        val ALLOWED_DOMAINS = stringSetPreferencesKey("allowed_domains")
+        val LAST_DOMAINS_SYNC = longPreferencesKey("last_domains_sync")
+        val DOMAINS_VERSION = longPreferencesKey("domains_version")
+    }
+    
+    companion object {
+        // Cache validity: 5 minutes for allowed packages (balance between freshness and offline support)
+        const val ALLOWED_PACKAGES_CACHE_DURATION_MS = 5 * 60 * 1000L
+        // Apps sync: once per hour is enough (apps don't change that often)
+        const val APPS_SYNC_INTERVAL_MS = 60 * 60 * 1000L
+        // Domain whitelist: sync every 5 minutes (or on push notification)
+        const val DOMAINS_CACHE_DURATION_MS = 5 * 60 * 1000L
     }
     
     // Flow to observe setup completion status
@@ -177,6 +193,87 @@ class PreferencesManager @Inject constructor(
     suspend fun clearParentMode() {
         context.dataStore.edit { prefs ->
             prefs[Keys.PARENT_MODE_EXPIRY] = 0L
+        }
+    }
+    
+    // ===== Cache Timestamps for Sync =====
+    
+    suspend fun setLastAppsSync(timestamp: Long = System.currentTimeMillis()) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.LAST_APPS_SYNC] = timestamp
+        }
+    }
+    
+    suspend fun getLastAppsSync(): Long {
+        return context.dataStore.data.map { prefs ->
+            prefs[Keys.LAST_APPS_SYNC] ?: 0L
+        }.first()
+    }
+    
+    suspend fun shouldSyncApps(): Boolean {
+        val lastSync = getLastAppsSync()
+        return System.currentTimeMillis() - lastSync > APPS_SYNC_INTERVAL_MS
+    }
+    
+    suspend fun setLastAllowedPackagesFetch(timestamp: Long = System.currentTimeMillis()) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.LAST_ALLOWED_PACKAGES_FETCH] = timestamp
+        }
+    }
+    
+    suspend fun getLastAllowedPackagesFetch(): Long {
+        return context.dataStore.data.map { prefs ->
+            prefs[Keys.LAST_ALLOWED_PACKAGES_FETCH] ?: 0L
+        }.first()
+    }
+    
+    suspend fun isAllowedPackagesCacheValid(): Boolean {
+        val lastFetch = getLastAllowedPackagesFetch()
+        return System.currentTimeMillis() - lastFetch < ALLOWED_PACKAGES_CACHE_DURATION_MS
+    }
+    
+    suspend fun getAllowedPackagesSync(): Set<String> {
+        return context.dataStore.data.map { prefs ->
+            prefs[Keys.ALLOWED_PACKAGES] ?: emptySet()
+        }.first()
+    }
+    
+    // ===== Domain Whitelist for VPN DNS Filtering =====
+    
+    val allowedDomains: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        prefs[Keys.ALLOWED_DOMAINS] ?: emptySet()
+    }
+    
+    suspend fun updateAllowedDomains(domains: Set<String>, version: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.ALLOWED_DOMAINS] = domains
+            prefs[Keys.DOMAINS_VERSION] = version
+            prefs[Keys.LAST_DOMAINS_SYNC] = System.currentTimeMillis()
+        }
+    }
+    
+    suspend fun getAllowedDomainsSync(): Set<String> {
+        return context.dataStore.data.map { prefs ->
+            prefs[Keys.ALLOWED_DOMAINS] ?: emptySet()
+        }.first()
+    }
+    
+    suspend fun getDomainsVersion(): Long {
+        return context.dataStore.data.map { prefs ->
+            prefs[Keys.DOMAINS_VERSION] ?: 0L
+        }.first()
+    }
+    
+    suspend fun isDomainsCacheValid(): Boolean {
+        val lastSync = context.dataStore.data.map { prefs ->
+            prefs[Keys.LAST_DOMAINS_SYNC] ?: 0L
+        }.first()
+        return System.currentTimeMillis() - lastSync < DOMAINS_CACHE_DURATION_MS
+    }
+    
+    suspend fun setLastDomainsSync(timestamp: Long = System.currentTimeMillis()) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.LAST_DOMAINS_SYNC] = timestamp
         }
     }
 }

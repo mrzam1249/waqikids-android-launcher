@@ -84,7 +84,7 @@ data class PairingStatusResponse(
 )
 
 /**
- * Request to sync installed apps
+ * Request to sync installed apps with full metadata
  * Matches backend: POST /api/device/installed-apps
  */
 data class SyncAppsRequest(
@@ -92,7 +92,24 @@ data class SyncAppsRequest(
     val deviceId: String,
     
     @SerializedName("apps")
-    val apps: List<String>  // Just package names for now
+    val apps: List<SyncAppItem>
+)
+
+/**
+ * Single app item for sync request
+ */
+data class SyncAppItem(
+    @SerializedName("package_name")
+    val packageName: String,
+    
+    @SerializedName("app_name")
+    val appName: String,
+    
+    @SerializedName("icon_data")
+    val iconData: String? = null,  // Base64 encoded icon
+    
+    @SerializedName("platform")
+    val platform: String = "android"
 )
 
 data class AppInfoDto(
@@ -110,11 +127,32 @@ data class AppInfoDto(
 )
 
 /**
- * Response with updated allowed packages
+ * Response from app sync
  */
 data class SyncAppsResponse(
     @SerializedName("success")
-    val success: Boolean
+    val success: Boolean,
+    
+    @SerializedName("synced")
+    val synced: Int? = null,
+    
+    @SerializedName("device_id")
+    val deviceId: String? = null
+)
+
+/**
+ * Response from getting allowed packages
+ * Matches backend: GET /api/device/{device_id}/allowed-packages
+ */
+data class AllowedPackagesResponse(
+    @SerializedName("status")
+    val status: String,
+    
+    @SerializedName("packages")
+    val packages: List<String>,
+    
+    @SerializedName("count")
+    val count: Int
 )
 
 /**
@@ -225,4 +263,30 @@ data class ParentPinResponse(
     
     @SerializedName("error")
     val error: String?
+)
+
+// ============================================================================
+// DOMAIN WHITELIST SYNC (VPN DNS Filtering)
+// ============================================================================
+
+/**
+ * Response from domain whitelist sync
+ * Matches backend: GET /api/whitelist/sync/{device_id}
+ * Returns all allowed domains (infrastructure + family + child-specific)
+ */
+data class WhitelistSyncResponse(
+    @SerializedName("status")
+    val status: String,
+    
+    @SerializedName("domains")
+    val domains: List<String>,
+    
+    @SerializedName("count")
+    val count: Int,
+    
+    @SerializedName("version")
+    val version: Long,
+    
+    @SerializedName("parent_id")
+    val parentId: String?
 )

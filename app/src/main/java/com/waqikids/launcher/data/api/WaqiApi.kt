@@ -1,5 +1,6 @@
 package com.waqikids.launcher.data.api
 
+import com.waqikids.launcher.data.api.dto.AllowedPackagesResponse
 import com.waqikids.launcher.data.api.dto.FcmTokenRequest
 import com.waqikids.launcher.data.api.dto.HeartbeatRequest
 import com.waqikids.launcher.data.api.dto.HeartbeatResponse
@@ -11,6 +12,7 @@ import com.waqikids.launcher.data.api.dto.PinVerifyRequest
 import com.waqikids.launcher.data.api.dto.PinVerifyResponse
 import com.waqikids.launcher.data.api.dto.SyncAppsRequest
 import com.waqikids.launcher.data.api.dto.SyncAppsResponse
+import com.waqikids.launcher.data.api.dto.WhitelistSyncResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -34,11 +36,18 @@ interface WaqiApi {
     suspend fun getPairingStatus(@Path("deviceId") deviceId: String): Response<PairingStatusResponse>
     
     /**
-     * Sync installed apps to backend
+     * Sync installed apps to backend (with full metadata including icons)
      * Backend: POST /api/device/installed-apps
      */
     @POST("device/installed-apps")
     suspend fun syncApps(@Body request: SyncAppsRequest): Response<SyncAppsResponse>
+    
+    /**
+     * Get list of allowed package names for this device
+     * Backend: GET /api/device/{device_id}/allowed-packages
+     */
+    @GET("device/{deviceId}/allowed-packages")
+    suspend fun getAllowedPackages(@Path("deviceId") deviceId: String): Response<AllowedPackagesResponse>
     
     /**
      * Send heartbeat and check if still paired
@@ -67,4 +76,12 @@ interface WaqiApi {
      */
     @GET("device/{deviceId}/parent-pin")
     suspend fun getParentPinHash(@Path("deviceId") deviceId: String): Response<ParentPinResponse>
+    
+    /**
+     * Sync domain whitelist for VPN DNS filtering
+     * Returns all allowed domains: infrastructure + family + child-specific
+     * Backend: GET /api/whitelist/sync/{device_id}
+     */
+    @GET("whitelist/sync/{deviceId}")
+    suspend fun syncWhitelist(@Path("deviceId") deviceId: String): Response<WhitelistSyncResponse>
 }
