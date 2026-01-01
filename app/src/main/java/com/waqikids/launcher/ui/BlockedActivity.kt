@@ -19,8 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.waqikids.launcher.ui.browser.AllowedSitesActivity
 import com.waqikids.launcher.ui.theme.WaqikidslauncherTheme
-import com.waqikids.launcher.util.BrowserHelper
 
 /**
  * Full-screen blocked page Activity
@@ -54,7 +54,7 @@ class BlockedActivity : ComponentActivity() {
                     domain = blockedDomain,
                     onGoBack = { finish() },
                     onGoHome = {
-                        BrowserHelper.openHomePage(this)
+                        startActivity(AllowedSitesActivity.createIntent(this))
                         finish()
                     }
                 )
