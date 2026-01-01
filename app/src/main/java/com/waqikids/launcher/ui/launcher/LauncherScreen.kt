@@ -70,6 +70,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.waqikids.launcher.domain.model.AppInfo
 import com.waqikids.launcher.ui.launcher.components.AnimatedCloud
+import com.waqikids.launcher.ui.launcher.components.BrowseWebCard
 import com.waqikids.launcher.ui.launcher.components.DhikrCard
 import com.waqikids.launcher.ui.launcher.components.DidYouKnowCard
 import com.waqikids.launcher.ui.launcher.components.ParentModeButton
@@ -84,6 +85,7 @@ import com.waqikids.launcher.ui.theme.KidPurple
 import com.waqikids.launcher.ui.theme.KidTeal
 import com.waqikids.launcher.ui.theme.KidYellow
 import com.waqikids.launcher.ui.theme.Primary
+import com.waqikids.launcher.util.BrowserHelper
 import java.util.Calendar
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -233,6 +235,13 @@ fun LauncherScreen(
             
             // Time Remaining Card - Fun Design
             TimeRemainingCard(timeRemaining = timeRemaining)
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            // Browse Web Card - Opens browser with WaqiKids homepage
+            BrowseWebCard(
+                onClick = { BrowserHelper.openHomePage(context) }
+            )
             
             Spacer(modifier = Modifier.height(24.dp))
             

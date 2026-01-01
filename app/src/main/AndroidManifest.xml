@@ -24,6 +24,15 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="35">
 
+        <!-- Blocked Website Screen - Launched by VPN when domain is blocked -->
+        <activity
+            android:name=".ui.BlockedActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.WaqiKidsLauncher"
+            android:excludeFromRecents="true"
+            android:noHistory="true" />
+
         <!-- Main Launcher Activity -->
         <activity
             android:name=".ui.MainActivity"

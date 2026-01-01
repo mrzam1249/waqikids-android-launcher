@@ -6,12 +6,15 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.net.VpnService
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.waqikids.launcher.R
 import com.waqikids.launcher.data.api.WaqiApi
 import com.waqikids.launcher.data.local.PreferencesManager
+import com.waqikids.launcher.ui.BlockedActivity
 import com.waqikids.launcher.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -273,10 +276,15 @@ class DnsVpnService : VpnService() {
             }
             forwardDnsQuery(packet, length, dnsData, outputStream)
         } else {
-            // Return backend IP to show blocked page
+            // Block the domain and show blocked page Activity
             blockedQueries++
-            Log.w(TAG, "BLOCKED: $domain (blocked: $blockedQueries/$totalQueries) -> redirecting to blocked page")
-            sendBlockedPageResponse(packet, length, dnsData, domain, outputStream)
+            Log.w(TAG, "BLOCKED: $domain (blocked: $blockedQueries/$totalQueries) -> showing blocked screen")
+            
+            // Launch BlockedActivity on main thread
+            showBlockedScreen(domain)
+            
+            // Return NXDOMAIN so browser doesn't show certificate/connection errors
+            sendNxdomainResponse(packet, length, dnsData, outputStream)
         }
     }
     
@@ -365,6 +373,41 @@ class DnsVpnService : VpnService() {
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to forward DNS query", e)
+            }
+        }
+    }
+    
+    // Handler for main thread operations
+    private val mainHandler = Handler(Looper.getMainLooper())
+    
+    // Track last blocked domain to avoid spamming the same screen
+    private var lastBlockedDomain: String? = null
+    private var lastBlockedTime: Long = 0
+    private val BLOCK_COOLDOWN_MS = 3000L  // 3 seconds cooldown
+    
+    /**
+     * Show the blocked screen Activity for a domain
+     * Uses cooldown to prevent multiple screens for the same domain
+     */
+    private fun showBlockedScreen(domain: String) {
+        val now = System.currentTimeMillis()
+        
+        // Avoid showing multiple screens for same domain in quick succession
+        if (domain == lastBlockedDomain && (now - lastBlockedTime) < BLOCK_COOLDOWN_MS) {
+            return
+        }
+        
+        lastBlockedDomain = domain
+        lastBlockedTime = now
+        
+        // Launch BlockedActivity on main thread
+        mainHandler.post {
+            try {
+                val intent = BlockedActivity.createIntent(this, domain)
+                startActivity(intent)
+                Log.d(TAG, "Launched BlockedActivity for: $domain")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to launch BlockedActivity", e)
             }
         }
     }
