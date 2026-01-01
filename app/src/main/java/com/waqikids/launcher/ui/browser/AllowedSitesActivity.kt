@@ -6,7 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.waqikids.launcher.ui.theme.WaqikidslauncherTheme
+import com.waqikids.launcher.ui.theme.WaqiKidsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -36,7 +36,7 @@ class AllowedSitesActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         setContent {
-            WaqikidslauncherTheme {
+            WaqiKidsTheme {
                 AllowedSitesScreen(
                     onWebsiteClick = { domain ->
                         // Open website in browser
