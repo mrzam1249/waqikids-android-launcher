@@ -20,6 +20,46 @@ class AllowedSitesViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager
 ) : ViewModel() {
     
+    // Infrastructure domains to filter out (not user-added websites)
+    private val infrastructureDomains = setOf(
+        // Firebase & Google Cloud
+        "fcm.googleapis.com",
+        "firebase.google.com",
+        "firebaseinstallations.googleapis.com",
+        "firebaselogging.googleapis.com",
+        "firebaseremoteconfig.googleapis.com",
+        "crashlyticsreports-pa.googleapis.com",
+        "googleapis.com",
+        "gstatic.com",
+        "googleusercontent.com",
+        
+        // Google Services
+        "google.com",
+        "play.google.com",
+        "android.com",
+        "android.clients.google.com",
+        "connectivitycheck.gstatic.com",
+        "clients.google.com",
+        "mtalk.google.com",
+        
+        // WaqiKids infrastructure
+        "waqikids.com",
+        "api.waqikids.com",
+        "dns.waqikids.com",
+        "www.waqikids.com",
+        
+        // DNS & connectivity
+        "dns.google",
+        "cloudflare-dns.com",
+        "1.1.1.1",
+        "8.8.8.8",
+        
+        // Common CDNs
+        "cloudfront.net",
+        "akamaized.net",
+        "fastly.net"
+    )
+    
     // Child's name from preferences
     val childName: StateFlow<String> = preferencesManager.childName
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
@@ -47,15 +87,17 @@ class AllowedSitesViewModel @Inject constructor(
     
     private fun loadData() {
         viewModelScope.launch {
-            // Load websites from preferences/cache
+            // Load websites from preferences/cache, filtering out infrastructure domains
             preferencesManager.allowedDomains.collect { domains ->
-                _allowedWebsites.value = domains.map { domain ->
-                    WebsiteInfo(
-                        domain = domain,
-                        name = formatDomainName(domain),
-                        icon = getIconForDomain(domain)
-                    )
-                }
+                _allowedWebsites.value = domains
+                    .filterNot { isInfrastructureDomain(it) }
+                    .map { domain ->
+                        WebsiteInfo(
+                            domain = domain,
+                            name = formatDomainName(domain),
+                            icon = getIconForDomain(domain)
+                        )
+                    }
             }
         }
         
@@ -198,6 +240,30 @@ class AllowedSitesViewModel @Inject constructor(
         
         val dayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
         _dailyVerse.value = verses[dayOfYear % verses.size]
+    }
+    
+    /**
+     * Check if a domain is infrastructure (Firebase, Google, DNS, etc.)
+     * These are technical domains needed for the app to work, not user-added websites
+     */
+    private fun isInfrastructureDomain(domain: String): Boolean {
+        val lowerDomain = domain.lowercase()
+        
+        // Exact match
+        if (lowerDomain in infrastructureDomains) return true
+        
+        // Check if it's a subdomain of an infrastructure domain
+        for (infra in infrastructureDomains) {
+            if (lowerDomain.endsWith(".$infra")) return true
+        }
+        
+        // Check for common infrastructure patterns
+        if (lowerDomain.contains("googleapis.com")) return true
+        if (lowerDomain.contains("gstatic.com")) return true
+        if (lowerDomain.contains("firebase")) return true
+        if (lowerDomain.contains("crashlytics")) return true
+        
+        return false
     }
     
     private fun formatDomainName(domain: String): String {

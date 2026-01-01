@@ -68,7 +68,12 @@ fun AllowedSitesScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // ========== BACK BUTTON ==========
+            BackButton(onClick = onGoHome)
+            
+            Spacer(modifier = Modifier.height(12.dp))
             
             // ========== BISMILLAH HEADER ==========
             BismillahHeader(goldColor = goldColor)
@@ -114,6 +119,45 @@ fun AllowedSitesScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+/**
+ * Back button to return to launcher
+ */
+@Composable
+private fun BackButton(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Back arrow circle
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF0D9488)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "←",
+                fontSize = 24.sp,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Text(
+            text = "Back to Home",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF2D3748)
+        )
     }
 }
 
@@ -322,62 +366,105 @@ private fun TodaysPrayersSection(prayerTimes: List<PrayerInfo>) {
 }
 
 /**
- * Individual prayer time chip
+ * Individual prayer time chip - Colorful kid-friendly design
  */
 @Composable
 private fun PrayerTimeChip(prayer: PrayerInfo) {
+    // Each prayer gets its own unique gradient colors and emoji
+    val (gradientColors, emoji) = when (prayer.name.lowercase()) {
+        "fajr" -> listOf(Color(0xFF7C3AED), Color(0xFF9333EA)) to "🌙"     // Purple - dawn
+        "dhuhr" -> listOf(Color(0xFFF59E0B), Color(0xFFFBBF24)) to "☀️"    // Gold - midday sun
+        "asr" -> listOf(Color(0xFFF97316), Color(0xFFFB923C)) to "🌤️"      // Orange - afternoon
+        "maghrib" -> listOf(Color(0xFFEC4899), Color(0xFFF472B6)) to "🌅"   // Pink - sunset
+        "isha" -> listOf(Color(0xFF3B82F6), Color(0xFF60A5FA)) to "🌃"      // Blue - night
+        else -> listOf(Color(0xFF0D9488), Color(0xFF14B8A6)) to "🕌"
+    }
+    
     val backgroundColor = when {
         prayer.isPast -> Color(0xFFE2E8F0)  // Gray for past
-        prayer.isNext -> Color(0xFF0D9488)  // Teal for next
-        else -> Color.White                  // White for future
+        else -> Color.Transparent           // Will use gradient
     }
     
     val textColor = when {
         prayer.isPast -> Color(0xFF718096)
-        prayer.isNext -> Color.White
-        else -> Color(0xFF2D3748)
+        else -> Color.White
+    }
+    
+    val cardModifier = if (prayer.isPast) {
+        Modifier
+            .width(if (prayer.isNext) 95.dp else 85.dp)
+            .shadow(4.dp, RoundedCornerShape(16.dp))
+    } else {
+        Modifier
+            .width(if (prayer.isNext) 95.dp else 85.dp)
+            .shadow(if (prayer.isNext) 12.dp else 6.dp, RoundedCornerShape(16.dp))
     }
     
     Card(
-        modifier = Modifier
-            .width(80.dp)
-            .shadow(4.dp, RoundedCornerShape(16.dp)),
+        modifier = cardModifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .then(
+                    if (!prayer.isPast) {
+                        Modifier.background(
+                            brush = Brush.verticalGradient(colors = gradientColors)
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .padding(vertical = if (prayer.isNext) 16.dp else 12.dp, horizontal = 8.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = prayer.name,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = textColor
-            )
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            Text(
-                text = prayer.time,
-                fontSize = 12.sp,
-                color = textColor.copy(alpha = 0.8f)
-            )
-            
-            Spacer(modifier = Modifier.height(6.dp))
-            
-            // Status indicator
-            Text(
-                text = when {
-                    prayer.isPast -> "✓"
-                    prayer.isNext -> "◉"
-                    else -> "○"
-                },
-                fontSize = 14.sp,
-                color = textColor
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Prayer emoji
+                Text(
+                    text = if (prayer.isPast) "✓" else emoji,
+                    fontSize = if (prayer.isNext) 24.sp else 20.sp
+                )
+                
+                Spacer(modifier = Modifier.height(6.dp))
+                
+                Text(
+                    text = prayer.name,
+                    fontSize = if (prayer.isNext) 15.sp else 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Text(
+                    text = prayer.time,
+                    fontSize = if (prayer.isNext) 13.sp else 12.sp,
+                    color = textColor.copy(alpha = 0.9f),
+                    fontWeight = FontWeight.Medium
+                )
+                
+                // "Next" badge for current prayer
+                if (prayer.isNext) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.25f))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "NEXT",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
         }
     }
 }
