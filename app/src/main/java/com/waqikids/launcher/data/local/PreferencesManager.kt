@@ -96,6 +96,10 @@ class PreferencesManager @Inject constructor(
         prefs[Keys.ALLOWED_PACKAGES] ?: emptySet()
     }
     
+    val childName: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.CHILD_NAME] ?: ""
+    }
+    
     val currentSetupStep: Flow<Int> = context.dataStore.data.map { prefs ->
         prefs[Keys.CURRENT_SETUP_STEP] ?: 0
     }

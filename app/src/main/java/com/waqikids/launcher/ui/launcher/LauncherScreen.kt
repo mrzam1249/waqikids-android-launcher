@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.waqikids.launcher.domain.model.AppInfo
+import com.waqikids.launcher.ui.browser.AllowedSitesActivity
 import com.waqikids.launcher.ui.launcher.components.AnimatedCloud
 import com.waqikids.launcher.ui.launcher.components.BrowseWebCard
 import com.waqikids.launcher.ui.launcher.components.DhikrCard
@@ -85,7 +86,6 @@ import com.waqikids.launcher.ui.theme.KidPurple
 import com.waqikids.launcher.ui.theme.KidTeal
 import com.waqikids.launcher.ui.theme.KidYellow
 import com.waqikids.launcher.ui.theme.Primary
-import com.waqikids.launcher.util.BrowserHelper
 import java.util.Calendar
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -238,9 +238,11 @@ fun LauncherScreen(
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            // Browse Web Card - Opens browser with WaqiKids homepage
+            // Browse Web Card - Opens AllowedSitesActivity (Islamic kid-friendly browser homepage)
             BrowseWebCard(
-                onClick = { BrowserHelper.openHomePage(context) }
+                onClick = { 
+                    context.startActivity(AllowedSitesActivity.createIntent(context))
+                }
             )
             
             Spacer(modifier = Modifier.height(24.dp))
