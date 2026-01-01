@@ -5,7 +5,7 @@ object Constants {
     const val API_BASE_URL = "http://178.156.160.245:8080/api/"
     const val DNS_BASE_DOMAIN = "dns.waqikids.com"
     
-    // Timeouts
+    // Timeouts - FCM push handles instant updates, polling is just for fallback
     const val SYNC_INTERVAL_MINUTES = 15L
     const val HEARTBEAT_INTERVAL_MINUTES = 5L
     

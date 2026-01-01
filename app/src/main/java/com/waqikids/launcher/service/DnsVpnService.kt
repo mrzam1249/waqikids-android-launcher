@@ -10,6 +10,7 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.waqikids.launcher.R
+import com.waqikids.launcher.data.api.WaqiApi
 import com.waqikids.launcher.data.local.PreferencesManager
 import com.waqikids.launcher.ui.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -50,12 +51,18 @@ class DnsVpnService : VpnService() {
     @Inject
     lateinit var preferencesManager: PreferencesManager
     
+    @Inject
+    lateinit var api: WaqiApi
+    
     private var vpnInterface: ParcelFileDescriptor? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val isRunning = AtomicBoolean(false)
     
     // O(1) lookup whitelist - loaded from DataStore
     private val allowedDomains = ConcurrentHashMap.newKeySet<String>()
+    
+    // Track parent-added domains separately (for notification display)
+    private var parentAddedDomainCount = 0
     
     // DNS Statistics
     private var totalQueries = 0L
@@ -75,6 +82,39 @@ class DnsVpnService : VpnService() {
         private val UPSTREAM_DNS = listOf("8.8.8.8", "8.8.4.4")
         private const val DNS_PORT = 53
         private const val VPN_MTU = 1500
+        
+        // Backend server IP - blocked domains redirect here to show blocked page
+        private val BLOCKED_PAGE_IP = byteArrayOf(178.toByte(), 156.toByte(), 160.toByte(), 245.toByte())
+        
+        // Essential infrastructure domains - ALWAYS allowed even if sync fails
+        // These are required for the app to function (Firebase, connectivity checks, etc.)
+        private val ESSENTIAL_INFRASTRUCTURE = setOf(
+            // Firebase/FCM (push notifications)
+            "fcm.googleapis.com",
+            "firebase.google.com",
+            "firebaseinstallations.googleapis.com",
+            "firebaseio.com",
+            
+            // Google Play Services
+            "googleapis.com",
+            "google.com",
+            "gstatic.com",
+            "play.google.com",
+            "android.com",
+            
+            // Connectivity checks
+            "connectivitycheck.gstatic.com",
+            "clients3.google.com",
+            
+            // Our backend
+            "178.156.160.245",
+            "waqikids.com",
+            "api.waqikids.com",
+            
+            // DNS
+            "dns.google",
+            "cloudflare-dns.com"
+        )
     }
     
     override fun onCreate() {
@@ -143,6 +183,9 @@ class DnsVpnService : VpnService() {
             
             // Start DNS proxy thread
             startDnsProxy()
+            
+            // Update notification with actual domain count after VPN starts
+            updateNotification()
             
             Log.i(TAG, "========================================")
             Log.i(TAG, "VPN STARTED SUCCESSFULLY")
@@ -230,10 +273,10 @@ class DnsVpnService : VpnService() {
             }
             forwardDnsQuery(packet, length, dnsData, outputStream)
         } else {
-            // Return NXDOMAIN
+            // Return backend IP to show blocked page
             blockedQueries++
-            Log.w(TAG, "BLOCKED: $domain (blocked: $blockedQueries/$totalQueries)")
-            sendNxdomainResponse(packet, length, dnsData, outputStream)
+            Log.w(TAG, "BLOCKED: $domain (blocked: $blockedQueries/$totalQueries) -> redirecting to blocked page")
+            sendBlockedPageResponse(packet, length, dnsData, domain, outputStream)
         }
     }
     
@@ -323,6 +366,69 @@ class DnsVpnService : VpnService() {
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to forward DNS query", e)
             }
+        }
+    }
+    
+    /**
+     * Send blocked page response - returns backend IP instead of NXDOMAIN
+     * This allows showing a friendly "blocked" page to the user
+     */
+    private fun sendBlockedPageResponse(
+        originalPacket: ByteArray,
+        length: Int,
+        dnsData: ByteArray,
+        domain: String,
+        outputStream: FileOutputStream
+    ) {
+        try {
+            // Build DNS response with A record pointing to our backend
+            // DNS Header: 12 bytes + Question section + Answer section
+            
+            // Find end of question section (skip QNAME + QTYPE + QCLASS)
+            var questionEnd = 12
+            while (questionEnd < dnsData.size && dnsData[questionEnd].toInt() != 0) {
+                questionEnd += dnsData[questionEnd].toInt() + 1
+            }
+            questionEnd += 5 // Skip null byte + QTYPE (2) + QCLASS (2)
+            
+            // Create response with A record
+            val responseSize = questionEnd + 16  // Header + Question + Answer (16 bytes for A record)
+            val response = ByteArray(responseSize)
+            
+            // Copy header and question
+            System.arraycopy(dnsData, 0, response, 0, minOf(questionEnd, dnsData.size))
+            
+            // Set DNS flags
+            response[2] = (0x81).toByte()  // QR=1, RD=1
+            response[3] = (0x80).toByte()  // RA=1, RCODE=0 (no error)
+            
+            // Set answer count = 1
+            response[6] = 0
+            response[7] = 1
+            
+            // Answer section (A record)
+            val answerStart = questionEnd
+            response[answerStart] = 0xC0.toByte()  // Pointer to domain name
+            response[answerStart + 1] = 0x0C.toByte()  // Offset 12 (start of QNAME)
+            response[answerStart + 2] = 0x00  // TYPE A
+            response[answerStart + 3] = 0x01
+            response[answerStart + 4] = 0x00  // CLASS IN
+            response[answerStart + 5] = 0x01
+            response[answerStart + 6] = 0x00  // TTL = 60 seconds
+            response[answerStart + 7] = 0x00
+            response[answerStart + 8] = 0x00
+            response[answerStart + 9] = 0x3C.toByte()
+            response[answerStart + 10] = 0x00  // RDLENGTH = 4
+            response[answerStart + 11] = 0x04
+            
+            // RDATA = Backend IP (178.156.160.245)
+            System.arraycopy(BLOCKED_PAGE_IP, 0, response, answerStart + 12, 4)
+            
+            sendDnsResponse(originalPacket, length, response, responseSize, outputStream)
+            
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to send blocked page response, falling back to NXDOMAIN", e)
+            sendNxdomainResponse(originalPacket, length, dnsData, outputStream)
         }
     }
     
@@ -432,26 +538,85 @@ class DnsVpnService : VpnService() {
     
     /**
      * Load whitelist from DataStore cache (offline-first)
+     * If cache is empty, triggers immediate sync from backend
      */
     private fun loadWhitelistFromCache() {
         runBlocking {
             try {
                 Log.i(TAG, "Loading whitelist from cache...")
-                val domains = preferencesManager.getAllowedDomainsSync()
+                var domains = preferencesManager.getAllowedDomainsSync()
+                
+                // If cache is empty, sync from backend FIRST before starting VPN filtering
+                if (domains.isEmpty()) {
+                    Log.w(TAG, "Cache is EMPTY - syncing from backend before VPN starts...")
+                    domains = syncDomainsFromBackend()
+                }
+                
                 allowedDomains.clear()
+                
+                // ALWAYS add essential infrastructure domains as fallback
+                // These ensure app functionality even if sync fails
+                allowedDomains.addAll(ESSENTIAL_INFRASTRUCTURE.map { it.lowercase() })
+                Log.i(TAG, "Added ${ESSENTIAL_INFRASTRUCTURE.size} essential infrastructure domains")
+                
+                // Add domains from backend/cache
                 allowedDomains.addAll(domains.map { it.lowercase() })
-                Log.i(TAG, "======== WHITELIST LOADED FROM CACHE ========")
+                
+                // Track parent-added domains count (excluding infrastructure)
+                parentAddedDomainCount = domains.size
+                
+                Log.i(TAG, "======== WHITELIST LOADED ========")
                 Log.i(TAG, "Total domains: ${allowedDomains.size}")
-                if (allowedDomains.isEmpty()) {
-                    Log.w(TAG, "WARNING: Whitelist is EMPTY! All sites will be blocked!")
+                Log.i(TAG, "  - Essential infrastructure: ${ESSENTIAL_INFRASTRUCTURE.size}")
+                Log.i(TAG, "  - From backend/cache: ${domains.size}")
+                if (domains.isEmpty()) {
+                    Log.w(TAG, "NOTE: Only infrastructure domains loaded")
+                    Log.w(TAG, "Parent has not added any websites yet, or sync failed")
                 } else {
                     Log.i(TAG, "Sample domains: ${allowedDomains.take(20)}")
                 }
-                Log.i(TAG, "==============================================")
+                Log.i(TAG, "===================================")
             } catch (e: Exception) {
                 Log.e(TAG, "FAILED to load whitelist from cache", e)
+                // Even on failure, ensure infrastructure domains are allowed
+                allowedDomains.addAll(ESSENTIAL_INFRASTRUCTURE.map { it.lowercase() })
+                Log.w(TAG, "Added ${ESSENTIAL_INFRASTRUCTURE.size} essential domains as fallback")
             }
         }
+    }
+    
+    /**
+     * Sync domains directly from backend when cache is empty
+     * Returns the domains fetched, or empty set on failure
+     */
+    private suspend fun syncDomainsFromBackend(): Set<String> {
+        try {
+            val deviceId = preferencesManager.getDeviceId()
+            if (deviceId == null) {
+                Log.w(TAG, "No device ID - cannot sync from backend (device not paired?)")
+                return emptySet()
+            }
+            
+            Log.i(TAG, "Calling backend /api/whitelist/sync/$deviceId ...")
+            val response = api.syncWhitelist(deviceId)
+            
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null && body.status == "success") {
+                    val domains = body.domains.toSet()
+                    Log.i(TAG, "SUCCESS: Fetched ${domains.size} domains from backend")
+                    
+                    // Save to cache for next time
+                    preferencesManager.updateAllowedDomains(domains, body.version)
+                    return domains
+                }
+            } else {
+                Log.e(TAG, "Backend sync failed: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error syncing from backend", e)
+        }
+        return emptySet()
     }
     
     /**
@@ -462,15 +627,26 @@ class DnsVpnService : VpnService() {
             try {
                 Log.i(TAG, "======== RELOADING WHITELIST (triggered by FCM) ========")
                 val domains = preferencesManager.getAllowedDomainsSync()
-                val oldCount = allowedDomains.size
+                val oldCount = parentAddedDomainCount
                 allowedDomains.clear()
+                
+                // Add infrastructure domains
+                allowedDomains.addAll(ESSENTIAL_INFRASTRUCTURE.map { it.lowercase() })
+                
+                // Add parent domains
                 allowedDomains.addAll(domains.map { it.lowercase() })
-                Log.i(TAG, "Whitelist reloaded: $oldCount -> ${allowedDomains.size} domains")
+                parentAddedDomainCount = domains.size
+                
+                Log.i(TAG, "Whitelist reloaded: $oldCount -> $parentAddedDomainCount parent domains")
                 if (allowedDomains.isEmpty()) {
                     Log.w(TAG, "WARNING: Whitelist is EMPTY after reload!")
                 } else {
                     Log.i(TAG, "Sample: ${allowedDomains.take(10)}")
                 }
+                
+                // Update notification with new domain count
+                updateNotification()
+                
                 Log.i(TAG, "========================================================")
             } catch (e: Exception) {
                 Log.e(TAG, "FAILED to reload whitelist", e)
@@ -502,12 +678,25 @@ class DnsVpnService : VpnService() {
         
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("WaqiKids Protection Active")
-            .setContentText("DNS filtering: ${allowedDomains.size} websites allowed")
+            .setContentText("$parentAddedDomainCount websites allowed by parent")
             .setSmallIcon(android.R.drawable.ic_lock_lock)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
+    }
+    
+    /**
+     * Update the foreground notification with current domain count
+     */
+    private fun updateNotification() {
+        try {
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.notify(NOTIFICATION_ID, createNotification())
+            Log.d(TAG, "Notification updated: $parentAddedDomainCount parent domains")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to update notification", e)
+        }
     }
     
     override fun onRevoke() {

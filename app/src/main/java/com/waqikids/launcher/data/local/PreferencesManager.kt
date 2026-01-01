@@ -55,11 +55,11 @@ class PreferencesManager @Inject constructor(
     }
     
     companion object {
-        // Cache validity: 5 minutes for allowed packages (balance between freshness and offline support)
+        // Cache validity: 5 minutes (FCM push handles instant updates)
         const val ALLOWED_PACKAGES_CACHE_DURATION_MS = 5 * 60 * 1000L
         // Apps sync: once per hour is enough (apps don't change that often)
         const val APPS_SYNC_INTERVAL_MS = 60 * 60 * 1000L
-        // Domain whitelist: sync every 5 minutes (or on push notification)
+        // Domain whitelist: 5 minutes cache (FCM push handles instant updates)
         const val DOMAINS_CACHE_DURATION_MS = 5 * 60 * 1000L
     }
     
