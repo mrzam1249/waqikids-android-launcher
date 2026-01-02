@@ -171,8 +171,44 @@ class DnsVpnService : VpnService() {
                 .addDnsServer("10.0.0.1")  // Fake DNS - we intercept
                 .addRoute("10.0.0.1", 32)  // Route only our fake DNS
             
-            // Allow our own app to bypass VPN
-            builder.addDisallowedApplication(packageName)
+            // ONLY apply VPN to browser apps - all other apps bypass VPN
+            // This way YouTube app, games, etc. work normally
+            // Only web browsing is filtered
+            val browserPackages = listOf(
+                "com.android.chrome",
+                "com.chrome.beta",
+                "com.chrome.dev",
+                "com.chrome.canary",
+                "org.mozilla.firefox",
+                "org.mozilla.firefox_beta",
+                "com.opera.browser",
+                "com.opera.mini.native",
+                "com.microsoft.emmx",  // Edge
+                "com.brave.browser",
+                "com.duckduckgo.mobile.android",
+                "com.sec.android.app.sbrowser",  // Samsung Browser
+                "com.huawei.browser",
+                "com.mi.globalbrowser",  // Xiaomi Browser
+                "com.UCMobile.intl",  // UC Browser
+                "com.kiwibrowser.browser",
+                "org.chromium.webview_shell",
+                "com.android.browser"  // AOSP Browser
+            )
+            
+            // Use addAllowedApplication to ONLY route browser traffic through VPN
+            var addedBrowsers = 0
+            for (browserPkg in browserPackages) {
+                try {
+                    packageManager.getPackageInfo(browserPkg, 0)
+                    builder.addAllowedApplication(browserPkg)
+                    addedBrowsers++
+                    Log.d(TAG, "VPN will filter: $browserPkg")
+                } catch (e: Exception) {
+                    // Browser not installed, skip
+                }
+            }
+            
+            Log.i(TAG, "VPN filtering $addedBrowsers browser apps only")
             
             vpnInterface = builder.establish()
             
