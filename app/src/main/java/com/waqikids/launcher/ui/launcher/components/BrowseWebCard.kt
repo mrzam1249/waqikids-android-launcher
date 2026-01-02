@@ -40,6 +40,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.Icon
 
 /**
  * Beautiful browser button card that opens the WaqiKids homepage
@@ -142,7 +145,7 @@ fun BrowseWebCard(
                     }
                 }
                 
-                // Arrow indicator
+                // Arrow indicator - properly centered with Material Icon
                 Box(
                     modifier = Modifier
                         .size(44.dp)
@@ -150,11 +153,11 @@ fun BrowseWebCard(
                         .background(Color.White.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "→",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                    Icon(
+                        imageVector = Icons.Filled.ChevronRight,
+                        contentDescription = "Go",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }

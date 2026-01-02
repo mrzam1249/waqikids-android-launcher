@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -161,8 +162,8 @@ fun DhikrCard(
                     .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "📿 ${dhikr.category} Adhkar",
-                    fontSize = 14.sp,
+                    text = "📿 ${dhikr.category}",
+                    fontSize = 16.sp,
                     color = Color(0xFF047857),
                     fontWeight = FontWeight.SemiBold
                 )
@@ -173,11 +174,11 @@ fun DhikrCard(
             // Arabic text
             Text(
                 text = dhikr.arabic,
-                fontSize = 30.sp,
+                fontSize = 34.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1F2937),
                 textAlign = TextAlign.Center,
-                lineHeight = 44.sp
+                lineHeight = 48.sp
             )
             
             Spacer(modifier = Modifier.height(14.dp))
@@ -185,7 +186,7 @@ fun DhikrCard(
             // Transliteration
             Text(
                 text = dhikr.transliteration,
-                fontSize = 16.sp,
+                fontSize = 18.sp,
                 color = Color(0xFF6B7280),
                 textAlign = TextAlign.Center,
                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
@@ -196,10 +197,10 @@ fun DhikrCard(
             // Translation
             Text(
                 text = dhikr.translation,
-                fontSize = 15.sp,
+                fontSize = 17.sp,
                 color = Color(0xFF4B5563),
                 textAlign = TextAlign.Center,
-                lineHeight = 22.sp
+                lineHeight = 26.sp
             )
             
             Spacer(modifier = Modifier.height(20.dp))
@@ -211,7 +212,7 @@ fun DhikrCard(
             ) {
                 Text(
                     text = "Tap to count: ",
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     color = Color(0xFF6B7280),
                     fontWeight = FontWeight.Medium
                 )
@@ -219,11 +220,11 @@ fun DhikrCard(
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
                         .background(Color(0xFF10B981))
-                        .padding(horizontal = 18.dp, vertical = 8.dp)
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) {
                     Text(
                         text = "$tapCount/${dhikr.count}",
-                        fontSize = 16.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -335,7 +336,8 @@ fun ParentModeButton(
     
     Box(
         modifier = modifier
-            .size(44.dp)
+            .size(52.dp)
+            .shadow(8.dp, CircleShape)
             .clip(CircleShape)
             .background(
                 brush = Brush.linearGradient(
@@ -353,7 +355,7 @@ fun ParentModeButton(
             contentDescription = "Parent Mode",
             tint = Color.White,
             modifier = Modifier
-                .size(22.dp)
+                .size(26.dp)
                 .rotate(rotation)
         )
     }

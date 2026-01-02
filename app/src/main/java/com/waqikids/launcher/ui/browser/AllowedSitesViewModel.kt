@@ -95,7 +95,8 @@ class AllowedSitesViewModel @Inject constructor(
                         WebsiteInfo(
                             domain = domain,
                             name = formatDomainName(domain),
-                            icon = getIconForDomain(domain)
+                            icon = getIconForDomain(domain),
+                            category = getCategoryForDomain(domain)
                         )
                     }
             }
@@ -355,6 +356,68 @@ class AllowedSitesViewModel @Inject constructor(
         return "🌐"
     }
     
+    /**
+     * Categorize domain into: islamic, learning, entertainment, other
+     */
+    private fun getCategoryForDomain(domain: String): String {
+        val lowerDomain = domain.lowercase()
+        
+        // Islamic sites
+        if (lowerDomain.contains("quran") || lowerDomain.contains("islam") || 
+            lowerDomain.contains("muslim") || lowerDomain.contains("seerah") ||
+            lowerDomain.contains("dua") || lowerDomain.contains("hadith") ||
+            lowerDomain.contains("salah") || lowerDomain.contains("prayer") ||
+            lowerDomain.contains("mosque") || lowerDomain.contains("masjid") ||
+            lowerDomain.contains("nasheed") || lowerDomain.contains("halal") ||
+            lowerDomain.contains("ramadan") || lowerDomain.contains("eid") ||
+            lowerDomain.contains("hijri") || lowerDomain.contains("mecca") ||
+            lowerDomain.contains("madina") || lowerDomain.contains("allah") ||
+            lowerDomain.contains("prophet") || lowerDomain.contains("sunnah") ||
+            lowerDomain.contains("fiqh") || lowerDomain.contains("tafsir") ||
+            lowerDomain.contains("zakat") || lowerDomain.contains("hajj") ||
+            lowerDomain.contains("umrah") || lowerDomain.contains("azan") ||
+            lowerDomain.contains("adhan") || lowerDomain.contains("athan")) {
+            return "islamic"
+        }
+        
+        // Learning/Educational sites
+        if (lowerDomain.contains("khan") || lowerDomain.contains("learn") ||
+            lowerDomain.contains("edu") || lowerDomain.contains("school") ||
+            lowerDomain.contains("study") || lowerDomain.contains("math") ||
+            lowerDomain.contains("science") || lowerDomain.contains("brain") ||
+            lowerDomain.contains("academy") || lowerDomain.contains("course") ||
+            lowerDomain.contains("duolingo") || lowerDomain.contains("language") ||
+            lowerDomain.contains("coding") || lowerDomain.contains("program") ||
+            lowerDomain.contains("wiki") || lowerDomain.contains("encyclopedia") ||
+            lowerDomain.contains("dictionary") || lowerDomain.contains("national") ||
+            lowerDomain.contains("geographic") || lowerDomain.contains("nasa") ||
+            lowerDomain.contains("pbs") || lowerDomain.contains("starfall") ||
+            lowerDomain.contains("abcmouse") || lowerDomain.contains("ixl") ||
+            lowerDomain.contains("prodigy") || lowerDomain.contains("scratch") ||
+            lowerDomain.contains("typing") || lowerDomain.contains("reading")) {
+            return "learning"
+        }
+        
+        // Entertainment sites
+        if (lowerDomain.contains("youtube") || lowerDomain.contains("netflix") ||
+            lowerDomain.contains("disney") || lowerDomain.contains("video") ||
+            lowerDomain.contains("game") || lowerDomain.contains("play") ||
+            lowerDomain.contains("fun") || lowerDomain.contains("nick") ||
+            lowerDomain.contains("cartoon") || lowerDomain.contains("animation") ||
+            lowerDomain.contains("movie") || lowerDomain.contains("tv") ||
+            lowerDomain.contains("stream") || lowerDomain.contains("music") ||
+            lowerDomain.contains("spotify") || lowerDomain.contains("roblox") ||
+            lowerDomain.contains("minecraft") || lowerDomain.contains("lego") ||
+            lowerDomain.contains("coolmath") || lowerDomain.contains("funbrain") ||
+            lowerDomain.contains("sesame") || lowerDomain.contains("peppa") ||
+            lowerDomain.contains("bluey")) {
+            return "entertainment"
+        }
+        
+        // Default to other
+        return "other"
+    }
+
     private fun formatTime(hour: Int, minute: Int): String {
         val cal = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, hour)
