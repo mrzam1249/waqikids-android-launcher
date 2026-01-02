@@ -50,6 +50,7 @@ class PreferencesManager @Inject constructor(
         val LAST_ALLOWED_PACKAGES_FETCH = longPreferencesKey("last_allowed_packages_fetch")
         // Domain whitelist for VPN DNS filtering
         val ALLOWED_DOMAINS = stringSetPreferencesKey("allowed_domains")
+        val PARENT_DOMAINS = stringSetPreferencesKey("parent_domains")  // Only parent-added for display
         val LAST_DOMAINS_SYNC = longPreferencesKey("last_domains_sync")
         val DOMAINS_VERSION = longPreferencesKey("domains_version")
     }
@@ -251,15 +252,24 @@ class PreferencesManager @Inject constructor(
         prefs[Keys.ALLOWED_DOMAINS] ?: emptySet()
     }
     
-    suspend fun updateAllowedDomains(domains: Set<String>, version: Long) {
+    // Parent-added domains only (for display in AllowedSitesScreen)
+    val parentDomains: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        prefs[Keys.PARENT_DOMAINS] ?: emptySet()
+    }
+    
+    suspend fun updateAllowedDomains(domains: Set<String>, version: Long, parentDomains: Set<String>? = null) {
         Log.i(TAG, "======== SAVING DOMAINS TO CACHE ========")
         Log.i(TAG, "Domain count: ${domains.size}")
+        Log.i(TAG, "Parent domains: ${parentDomains?.size ?: 0}")
         Log.i(TAG, "Version: $version")
         Log.i(TAG, "Sample: ${domains.take(5)}")
         context.dataStore.edit { prefs ->
             prefs[Keys.ALLOWED_DOMAINS] = domains
             prefs[Keys.DOMAINS_VERSION] = version
             prefs[Keys.LAST_DOMAINS_SYNC] = System.currentTimeMillis()
+            if (parentDomains != null) {
+                prefs[Keys.PARENT_DOMAINS] = parentDomains
+            }
         }
         Log.i(TAG, "Domains saved to DataStore successfully")
         Log.i(TAG, "=========================================")

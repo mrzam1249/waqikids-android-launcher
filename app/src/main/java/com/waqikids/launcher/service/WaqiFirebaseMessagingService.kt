@@ -122,8 +122,12 @@ class WaqiFirebaseMessagingService : FirebaseMessagingService() {
                 if (response.isSuccessful) {
                     val body = response.body()
                     if (body != null && body.status == "success") {
-                        preferencesManager.updateAllowedDomains(body.domains.toSet(), body.version)
-                        Log.i(TAG, "Instant sync complete: ${body.count} domains")
+                        preferencesManager.updateAllowedDomains(
+                            body.domains.toSet(), 
+                            body.version,
+                            body.parentDomains?.toSet()
+                        )
+                        Log.i(TAG, "Instant sync complete: ${body.count} domains, ${body.parentDomains?.size ?: 0} parent domains")
                         
                         // Reload VPN with new data
                         val reloadIntent = Intent(this@WaqiFirebaseMessagingService, DnsVpnService::class.java).apply {

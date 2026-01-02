@@ -281,6 +281,9 @@ data class WhitelistSyncResponse(
     @SerializedName("domains")
     val domains: List<String>,
     
+    @SerializedName("parent_domains")
+    val parentDomains: List<String>? = null,  // Only parent-added domains for display
+    
     @SerializedName("count")
     val count: Int,
     

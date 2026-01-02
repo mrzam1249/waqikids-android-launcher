@@ -87,11 +87,12 @@ class AllowedSitesViewModel @Inject constructor(
     
     private fun loadData() {
         viewModelScope.launch {
-            // Load websites from preferences/cache, filtering out infrastructure domains
-            preferencesManager.allowedDomains.collect { domains ->
-                _allowedWebsites.value = domains
-                    .filterNot { isInfrastructureDomain(it) }
-                    .map { domain ->
+            // Use parentDomains (from backend) which contains ONLY parent-added websites
+            // Falls back to filtering allowedDomains if parentDomains not available
+            preferencesManager.parentDomains.collect { parentDomains ->
+                if (parentDomains.isNotEmpty()) {
+                    // Use the clean parent domains list from backend
+                    _allowedWebsites.value = parentDomains.map { domain ->
                         WebsiteInfo(
                             domain = domain,
                             name = formatDomainName(domain),
@@ -99,6 +100,21 @@ class AllowedSitesViewModel @Inject constructor(
                             category = getCategoryForDomain(domain)
                         )
                     }
+                } else {
+                    // Fallback: filter infrastructure domains locally
+                    preferencesManager.allowedDomains.first().let { domains ->
+                        _allowedWebsites.value = domains
+                            .filterNot { isInfrastructureDomain(it) }
+                            .map { domain ->
+                                WebsiteInfo(
+                                    domain = domain,
+                                    name = formatDomainName(domain),
+                                    icon = getIconForDomain(domain),
+                                    category = getCategoryForDomain(domain)
+                                )
+                            }
+                    }
+                }
             }
         }
         
@@ -248,7 +264,7 @@ class AllowedSitesViewModel @Inject constructor(
      * These are technical domains needed for the app to work, not user-added websites
      */
     private fun isInfrastructureDomain(domain: String): Boolean {
-        val lowerDomain = domain.lowercase()
+        val lowerDomain = domain.lowercase().trim()
         
         // Exact match
         if (lowerDomain in infrastructureDomains) return true
@@ -256,6 +272,7 @@ class AllowedSitesViewModel @Inject constructor(
         // Check if it's a subdomain of an infrastructure domain
         for (infra in infrastructureDomains) {
             if (lowerDomain.endsWith(".$infra")) return true
+            if (lowerDomain == infra) return true
         }
         
         // Check for common infrastructure patterns
@@ -263,6 +280,16 @@ class AllowedSitesViewModel @Inject constructor(
         if (lowerDomain.contains("gstatic.com")) return true
         if (lowerDomain.contains("firebase")) return true
         if (lowerDomain.contains("crashlytics")) return true
+        if (lowerDomain.contains("google.com")) return true
+        if (lowerDomain.contains("android.com")) return true
+        if (lowerDomain.contains("waqikids")) return true
+        if (lowerDomain.contains("cloudflare")) return true
+        if (lowerDomain.contains("akamai")) return true
+        if (lowerDomain.contains("cdn.")) return true
+        if (lowerDomain.contains(".cdn.")) return true
+        
+        // IP addresses
+        if (lowerDomain.matches(Regex("^\\d+\\.\\d+\\.\\d+\\.\\d+$"))) return true
         
         return false
     }

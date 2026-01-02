@@ -278,12 +278,14 @@ class SyncService : Service() {
                 val body = response.body()
                 if (body != null && body.status == "success") {
                     val domains = body.domains.toSet()
+                    val parentDomains = body.parentDomains?.toSet()
                     val version = body.version
-                    Log.i(TAG, "SUCCESS: Received ${domains.size} domains")
+                    Log.i(TAG, "SUCCESS: Received ${domains.size} domains, ${parentDomains?.size ?: 0} parent domains")
                     Log.i(TAG, "Version: $version")
                     Log.i(TAG, "Sample domains: ${domains.take(10)}")
+                    Log.i(TAG, "Sample parent domains: ${parentDomains?.take(10)}")
                     
-                    preferencesManager.updateAllowedDomains(domains, version)
+                    preferencesManager.updateAllowedDomains(domains, version, parentDomains)
                     Log.i(TAG, "Domains saved to local cache")
                     
                     // Notify VPN service to reload whitelist
