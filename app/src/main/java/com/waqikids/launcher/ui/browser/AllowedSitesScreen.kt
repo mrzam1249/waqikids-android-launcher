@@ -592,9 +592,14 @@ private fun WebsiteCard(
         label = "scale"
     )
     
-    // Google Favicon URL (with caching)
+    // Check for bundled icon first (instant, offline)
+    val bundledIconRes = remember(website.domain) { 
+        FaviconHelper.getBundledIconRes(context, website.domain) 
+    }
+    
+    // Google Favicon URL (with caching) - used if no bundled icon
     val faviconUrl = remember(website.domain) {
-        "https://www.google.com/s2/favicons?domain=${website.domain}&sz=128"
+        FaviconHelper.getFaviconUrl(website.domain)
     }
     
     Card(
@@ -617,7 +622,10 @@ private fun WebsiteCard(
                 .padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Favicon with colored background - try real icon, fallback to emoji
+            // Favicon with colored background
+            // Layer 1: Bundled icon (instant, offline)
+            // Layer 2: Google Favicon with disk cache
+            // Layer 3: Emoji fallback
             Box(
                 modifier = Modifier
                     .size(52.dp)
@@ -625,39 +633,51 @@ private fun WebsiteCard(
                     .background(accentColor.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                SubcomposeAsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(faviconUrl)
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .memoryCachePolicy(CachePolicy.ENABLED)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = website.name,
-                    loading = {
-                        // Show emoji while loading
-                        Text(
-                            text = website.icon,
-                            fontSize = 28.sp
-                        )
-                    },
-                    error = {
-                        // Show emoji if favicon fails to load
-                        Text(
-                            text = website.icon,
-                            fontSize = 28.sp
-                        )
-                    },
-                    success = { state ->
-                        // Show the favicon
-                        androidx.compose.foundation.Image(
-                            painter = state.painter,
-                            contentDescription = website.name,
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                        )
-                    }
-                )
+                if (bundledIconRes != null) {
+                    // Layer 1: Bundled icon - instant, works offline
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = bundledIconRes),
+                        contentDescription = website.name,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                } else {
+                    // Layer 2 & 3: Google Favicon with disk cache, fallback to emoji
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(faviconUrl)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = website.name,
+                        loading = {
+                            // Show emoji while loading
+                            Text(
+                                text = website.icon,
+                                fontSize = 28.sp
+                            )
+                        },
+                        error = {
+                            // Show emoji if favicon fails to load
+                            Text(
+                                text = website.icon,
+                                fontSize = 28.sp
+                            )
+                        },
+                        success = { state ->
+                            // Show the favicon
+                            androidx.compose.foundation.Image(
+                                painter = state.painter,
+                                contentDescription = website.name,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                            )
+                        }
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(10.dp))
