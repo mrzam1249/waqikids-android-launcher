@@ -37,6 +37,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.SubcomposeAsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 import java.util.Calendar
 
 // Beautiful gradient colors matching launcher
@@ -571,7 +575,7 @@ private fun WebsiteCategorySection(
 }
 
 // ═══════════════════════════════════════════════════════════
-// WEBSITE CARD - Clean white card with colored accent
+// WEBSITE CARD - Clean white card with favicon + fallback
 // ═══════════════════════════════════════════════════════════
 @Composable
 private fun WebsiteCard(
@@ -579,6 +583,7 @@ private fun WebsiteCard(
     accentColor: Color,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -586,6 +591,11 @@ private fun WebsiteCard(
         animationSpec = tween(100),
         label = "scale"
     )
+    
+    // Google Favicon URL (with caching)
+    val faviconUrl = remember(website.domain) {
+        "https://www.google.com/s2/favicons?domain=${website.domain}&sz=128"
+    }
     
     Card(
         modifier = Modifier
@@ -607,7 +617,7 @@ private fun WebsiteCard(
                 .padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Icon with colored background
+            // Favicon with colored background - try real icon, fallback to emoji
             Box(
                 modifier = Modifier
                     .size(52.dp)
@@ -615,9 +625,38 @@ private fun WebsiteCard(
                     .background(accentColor.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = website.icon,
-                    fontSize = 28.sp
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(faviconUrl)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = website.name,
+                    loading = {
+                        // Show emoji while loading
+                        Text(
+                            text = website.icon,
+                            fontSize = 28.sp
+                        )
+                    },
+                    error = {
+                        // Show emoji if favicon fails to load
+                        Text(
+                            text = website.icon,
+                            fontSize = 28.sp
+                        )
+                    },
+                    success = { state ->
+                        // Show the favicon
+                        androidx.compose.foundation.Image(
+                            painter = state.painter,
+                            contentDescription = website.name,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                        )
+                    }
                 )
             }
             
