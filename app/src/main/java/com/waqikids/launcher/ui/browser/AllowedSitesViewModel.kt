@@ -20,6 +20,17 @@ class AllowedSitesViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager
 ) : ViewModel() {
     
+    // Default Islamic websites - always shown to all users
+    private val defaultIslamicDomains = setOf(
+        "quran.com",
+        "sunnah.com",
+        "islamqa.info",
+        "islamicfinder.org",
+        "myislam.org",
+        "muslim.sg",
+        "aladhan.com"
+    )
+    
     // Infrastructure domains to filter out (not user-added websites)
     private val infrastructureDomains = setOf(
         // Firebase & Google Cloud
@@ -57,7 +68,14 @@ class AllowedSitesViewModel @Inject constructor(
         // Common CDNs
         "cloudfront.net",
         "akamaized.net",
-        "fastly.net"
+        "fastly.net",
+        "jsdelivr.net",
+        "unpkg.com",
+        "cdnjs.cloudflare.com",
+        "bootstrapcdn.com",
+        "fontawesome.com",
+        "fonts.googleapis.com",
+        "fonts.gstatic.com"
     )
     
     // Child's name from preferences
@@ -88,32 +106,24 @@ class AllowedSitesViewModel @Inject constructor(
     private fun loadData() {
         viewModelScope.launch {
             // Use parentDomains (from backend) which contains ONLY parent-added websites
-            // Falls back to filtering allowedDomains if parentDomains not available
             preferencesManager.parentDomains.collect { parentDomains ->
-                if (parentDomains.isNotEmpty()) {
-                    // Use the clean parent domains list from backend
-                    _allowedWebsites.value = parentDomains.map { domain ->
-                        WebsiteInfo(
-                            domain = domain,
-                            name = formatDomainName(domain),
-                            icon = getIconForDomain(domain),
-                            category = getCategoryForDomain(domain)
-                        )
-                    }
-                } else {
-                    // Fallback: filter infrastructure domains locally
-                    preferencesManager.allowedDomains.first().let { domains ->
-                        _allowedWebsites.value = domains
-                            .filterNot { isInfrastructureDomain(it) }
-                            .map { domain ->
-                                WebsiteInfo(
-                                    domain = domain,
-                                    name = formatDomainName(domain),
-                                    icon = getIconForDomain(domain),
-                                    category = getCategoryForDomain(domain)
-                                )
-                            }
-                    }
+                // Only use parent-added domains that are NOT infrastructure
+                val parentAddedSites = parentDomains
+                    .filterNot { isInfrastructureDomain(it) }
+                
+                // Combine parent-added sites with default Islamic sites (avoiding duplicates)
+                // If no parent domains, user still sees the default Islamic sites
+                val allDomains = (parentAddedSites + defaultIslamicDomains)
+                    .map { it.lowercase().trim() }
+                    .distinct()
+                
+                _allowedWebsites.value = allDomains.map { domain ->
+                    WebsiteInfo(
+                        domain = domain,
+                        name = formatDomainName(domain),
+                        icon = getIconForDomain(domain),
+                        category = getCategoryForDomain(domain)
+                    )
                 }
             }
         }

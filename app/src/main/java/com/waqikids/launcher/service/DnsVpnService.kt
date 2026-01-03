@@ -312,14 +312,14 @@ class DnsVpnService : VpnService() {
             }
             forwardDnsQuery(packet, length, dnsData, outputStream)
         } else {
-            // Block the domain and show blocked page Activity
+            // Block the domain - return NXDOMAIN (browser shows error page)
             blockedQueries++
-            Log.w(TAG, "BLOCKED: $domain (blocked: $blockedQueries/$totalQueries) -> showing blocked screen")
+            Log.w(TAG, "BLOCKED: $domain (blocked: $blockedQueries/$totalQueries)")
             
-            // Launch BlockedActivity on main thread
-            showBlockedScreen(domain)
+            // TODO: For v2, consider showing BlockedActivity or redirect to block page server
+            // showBlockedScreen(domain)
             
-            // Return NXDOMAIN so browser doesn't show certificate/connection errors
+            // Return NXDOMAIN so browser shows "site can't be reached"
             sendNxdomainResponse(packet, length, dnsData, outputStream)
         }
     }
@@ -331,7 +331,7 @@ class DnsVpnService : VpnService() {
     private fun isDomainAllowed(domain: String): Boolean {
         val lowerDomain = domain.lowercase()
         
-        // Direct match
+        // Direct match in allowed domains
         if (allowedDomains.contains(lowerDomain)) {
             return true
         }
