@@ -92,7 +92,7 @@ fun WebsiteFavicon(
     size: Dp = 36.dp
 ) {
     val context = LocalContext.current
-    val bundledIconRes = remember(domain) { FaviconHelper.getBundledIconRes(domain) }
+    val bundledIconRes = remember(domain) { FaviconHelper.getBundledIconRes(context, domain) }
     
     if (bundledIconRes != null) {
         // Layer 1: Bundled icon - instant, works offline
